@@ -1,0 +1,276 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 21 10:23:16 2022
+
+@author: darruda2.ga
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 17 14:35:46 2022
+
+@author: darruda2
+"""
+
+import datetime
+from datetime import date 
+import numpy as np 
+import pandas as pd 
+import os 
+
+print(os.getcwd())
+'''
+question = input('Would you like to change your working directory: Press 1 for yes; 2 for no: \n')
+if question == '1':
+    directory = input('Please list what directory you would like to use: ')
+    os.chdir(directory)
+    
+    
+'''
+
+
+## Reading the Data 
+date = datetime.datetime.now()
+'''file = input('Please input the name of the file you would like to analyze: ')'''
+data = pd.read_excel('Mock Business Data.xlsx')
+
+
+
+# getting the differences between start and open dates; close and target res
+
+data['Start-Open_Discrepancy'] = data['Start_Date'] - data['Open_Date']
+data['Start-Open_Discrepancy'] = data['Start-Open_Discrepancy'].dt.days
+time_list = data['Start-Open_Discrepancy'].to_list()
+data['Close-TargetRes_Discrepancy'] = data['Close_Date'] - data['Target_Resolution_Date']
+data['Close-TargetRes_Discrepancy'] = data['Close-TargetRes_Discrepancy'].dt.days
+disc_list = data['Close-TargetRes_Discrepancy'].to_list()
+progress_status = []
+for items in disc_list: 
+    if items < 0: 
+        progress_status.append('On Track')
+    elif items > 0 and items <= 3:
+        progress_status.append('A few/several days late')
+    else: 
+        progress_status.append('Red Flag')
+data = data.drop('Close-TargetRes_Discrepancy', axis =1 )
+data['Progress_Status'] = progress_status
+data = data.dropna()
+data_copy = data
+
+
+
+### dropping uncecessary variables: 
+dropped_variables = ['Close-Target Discrepancy', 'Cum. Months', 'Date Range ', 'Close - StartDate', 'Unresolved During Open Quarter', 'Cum. Unresolved On Time',  'Close Quarter' ,'Report Date (Days Since Open Date)', 
+                     'Late Close Date ','Percent of Senior Employees Assigned (Adjusted)', 
+                     'Open_Date','Issue_ID', 'Start_Date', 'Close_Date', 'Target_Resolution_Date', 'week number']
+data = data.drop(dropped_variables, axis = 1)
+##################################
+
+
+
+
+
+
+print('Printing Column Names and Data Types:\n', data.dtypes)
+
+# to choose which variable
+#target variable 
+x = input('\nWhat would you like your target variable to be? ')
+original_data = data
+if x == 'Project_Status' or "1":
+    target = data['Progress_Status']
+    data = data.drop(['Progress_Status'], axis = 1)
+else:
+    target = data[x]
+    data = data.drop(['Progress_Status', x], axis = 1)
+
+#dropping the target and any unecessary explanatory variables 
+
+og_data = data
+
+# Converted data subbmitted to excel 
+
+#ensuring that target is not in training data 
+
+
+
+
+chosen_variables = og_data.columns
+
+predict_data = pd.read_excel('Predict_Values_Pipeline.xlsx')
+predict_data_copy = predict_data
+predict_data_variables = predict_data.columns
+
+    
+
+    ########VARIABLE MASTER LISTS#######
+cat_variables_master_list = ['Issue_Category', 'Priority', 'Risk', 'Department_Assigned', 'Team_Assigned', 'In Scope', 'Progress_Status']
+numeric_variables_master_list = ["Start-Open_Discrepancy", "Number Of Consultants Assigned",  "Percent Of Project (Time Adjusted)", "Percent of Project Completed (Manager Opinion)"]
+
+
+
+# to determine the size of my train and test data 
+train_size = int(len(data) * 0.80)
+
+train_data = data[0: train_size]
+train_data_copy = train_data
+test_data = data[train_size :]
+test_data_copy = test_data
+test_data_copy['Issue_ID'] = data_copy['Issue_ID']
+
+y_train = target[0: train_size]
+y_test = target[ train_size:]
+
+for items in predict_data_variables: 
+    if items in chosen_variables:
+        continue 
+    else: 
+        predict_data = predict_data.drop([items], axis = 1)
+
+print(predict_data)
+        
+for items in train_data.columns: 
+    if items not in predict_data.columns :
+        print(items)
+    
+print(predict_data.columns == train_data.columns)
+
+print('\nEnsuring that target variable not in train or test data:\n')
+if x in train_data or x in test_data: 
+    decision = 'True'
+else:
+    decision = 'False'
+
+print('Target in train or test data: ', decision)
+
+
+#print out my data types so I know which pipeline to use 
+
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+
+
+
+#Numerical Pipeline
+
+num_pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler())
+    ])
+
+
+from sklearn.preprocessing import OneHotEncoder
+
+
+#Cat pipeline
+from sklearn.compose import ColumnTransformer
+cat_pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("cat_encoder", OneHotEncoder(sparse=False))
+    ])
+
+
+num_attribs = []
+cat_attribs = []
+for items in chosen_variables:
+    if items in cat_variables_master_list:
+        cat_attribs.append(items)
+    else:
+        continue
+for item in chosen_variables: 
+    if item in numeric_variables_master_list:
+        num_attribs.append(item)
+
+#combining the pipeline
+preprocess_pipeline = ColumnTransformer([
+        ("num", num_pipeline, num_attribs),
+        ("cat", cat_pipeline, cat_attribs),
+    ])
+
+# fitting the pipeline on the data
+X_train = preprocess_pipeline.fit_transform(
+    train_data[num_attribs + cat_attribs])
+
+
+
+X_test = preprocess_pipeline.fit_transform(
+    test_data[num_attribs + cat_attribs])
+
+explanatory_variables = cat_attribs + num_attribs
+
+
+#importing models of interest 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import DecisionTreeClassifier
+
+
+#fitting the model on the training data
+if x in cat_variables_master_list:
+    forest_clf = DecisionTreeClassifier()
+    print('\nUsing Classification Model\n',
+          'model: ', forest_clf)
+else: 
+    forest_clf = RandomForestRegressor()
+    print('\nUsing Regression Model\n')
+forest_clf.fit(X_train, y_train)
+print('\n\nPrinting model score:\n', forest_clf.score(X_train, y_train))
+
+
+y_pred = forest_clf.predict(X_test)
+from sklearn.model_selection import cross_val_score
+
+forest_scores = cross_val_score(forest_clf, X_train, y_train, cv=50)
+ 
+                       
+print('\nPrinting cross validation scores:\n', forest_scores.mean())
+
+y_pred1 = forest_clf.predict(X_train)
+y_pred2 = forest_clf.predict(X_test)
+
+y_pred = np.append(y_pred1,y_pred2)
+data['predicted_values'] = y_pred
+data['actual_value'] = target
+
+if x in cat_variables_master_list:
+    data['predicted=actual'] = data['predicted_values'] == data['actual_value']
+else: 
+    forest_clf = RandomForestRegressor()
+    data['absolute_percent_error'] = ((data['actual_value'] - data['predicted_values'])/data['actual_value']) * 100
+    print('\nPrinted To Excel\n')
+    
+
+
+predict = input('Would you like to make predictions based on the model? Press 1 for yes or 2 for no: ')
+
+if predict == '1':
+    train_data_copy = predict_data
+    pred_data = preprocess_pipeline.fit_transform(
+    train_data_copy[num_attribs + cat_attribs])
+    predicted_values = forest_clf.predict(pred_data)
+    print('predicted_values')
+    train_data_copy['predicted_values'] = predicted_values
+    train_data_copy['Issue ID'] = predict_data_copy['Issue_ID']
+    train_data_copy['Issue ID'] = predict_data_copy['Start_Date']
+    train_data_copy['Issue ID'] = predict_data_copy['Open Date']
+    train_data_copy.to_excel('Predicted Values2.xlsx')
+    
+    
+    
+    '''
+if predict == '2': 
+    print(train_data.head(n=10))
+    pred_data = preprocess_pipeline.fit_transform(
+    train_data_copy[num_attribs + cat_attribs])
+    predicted_values = forest_clf.predict(pred_data)
+    print('predicted_values')
+    train_data_copy['Start_Date'] = data_copy['Start_Date']
+    train_data_copy['Issue_ID'] = data_copy['Issue_ID']
+    train_data_copy['Open_Date'] = data_copy['Open_Date']
+    train_data_copy['predicted values'] = predicted_values
+    train_data_copy['actual value'] = y_train
+    train_data_copy['predicted = actual'] = train_data_copy['predicted values'] == train_data_copy['actual value']
+    train_data_copy.to_excel('Predicted Values3.xlsx')
+
+    '''
