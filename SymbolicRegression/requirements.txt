@@ -1,5 +1,7 @@
 gplearn
+sympy
 numpy
+matplotlib
 pandas
 sklearn
 xgboost
