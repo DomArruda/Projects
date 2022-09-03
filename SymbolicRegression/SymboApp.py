@@ -9,7 +9,7 @@ from PIL import Image
 from xgboost import plot_importance
 import matplotlib.pyplot as plt
 
-image = Image.open('symbo.jpeg')
+image = Image.open('https://github.com/DomArruda/Projects/blob/main/SymbolicRegression/symbo.jpeg')
 st.image(image,caption = 'Python Symbolic Regression', use_column_width = True)
 import csv
 import random
