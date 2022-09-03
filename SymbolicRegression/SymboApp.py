@@ -26,6 +26,7 @@ from numpy import add, multiply as mul, subtract as sub, divide as div
 import sympy as smp
 from sympy.core import sympify
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
+from sklearn.metrics import mean_absolute_error as MAE
 from sklearn.metrics import r2_score
 from xgboost import XGBRegressor 
 from sympy import *
@@ -166,9 +167,11 @@ def run_regression(uploaded_file):
         st.text('')
         st.text('')
         st.latex(approx_formula)
-        
+      
+        mae_error = round(MAE(y_test,est_gp.predict(X_test)) * 100, 5)
         
         st.latex(f'MAPE: {error:.2f}%')
+        st.latex(f'MAE: {mae_error:.2f}'
         st.latex(f'R-Squared : {r2:.5f}')
 
 
