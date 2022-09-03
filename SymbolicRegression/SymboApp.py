@@ -177,7 +177,7 @@ with st.sidebar.header('**1.Upload your CSV data**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
  
     
-elif uploaded_file != None: 
+if uploaded_file != None: 
     run_regression(uploaded_file)
     
         
