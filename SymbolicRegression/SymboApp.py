@@ -18,10 +18,8 @@ from gplearn.genetic import SymbolicRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils.random import check_random_state
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
-import graphviz
 from sklearn.model_selection import train_test_split 
 import pandas as pd
 from numpy import add, multiply as mul, subtract as sub, divide as div
