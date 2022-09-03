@@ -171,7 +171,7 @@ def run_regression(uploaded_file):
         mae_error = round(MAE(y_test,est_gp.predict(X_test)) * 100, 5)
         
         st.latex(f'MAPE: {error:.2f}%')
-        st.latex(f'MAE: {mae_error:.2f}'
+        st.latex(f'MAE: {mae_error:.2f}')
         st.latex(f'R-Squared : {r2:.5f}')
 
 
