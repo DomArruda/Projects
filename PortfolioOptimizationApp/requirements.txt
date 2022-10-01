@@ -5,4 +5,3 @@ torch
 streamlit
 pandas_datareader
 PyPortfolioOpt
-PIL
