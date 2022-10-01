@@ -20,7 +20,7 @@ from pypfopt.efficient_frontier import EfficientCVaR
 from PIL import Image
 from random import randint
 from pypfopt import HRPOpt
-image = Image.open('C:/Users/Domin/Downloads/optGraph.jpg')
+image = Image.open('PortfolioOptimizationApp/symbo.jpeg')
 st.image(image,caption = 'Portfolio Optimization', use_column_width = True)
     
     
