@@ -1,7 +1,6 @@
 pandas
 yfinance
 datetime
-time
 requests
 io
 torch
