@@ -4,5 +4,5 @@ datetime
 torch
 streamlit
 pandas_datareader
-pypfopt
+PyPortfolioOpt
 PIL
