@@ -1,11 +1,8 @@
 pandas
 yfinance
 datetime
-requests
-io
 torch
 streamlit
 pandas_datareader
 pypfopt
 PIL
-random
