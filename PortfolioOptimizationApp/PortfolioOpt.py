@@ -141,8 +141,7 @@ def HRP(portfolio):
     st.markdown("**Non-Discrete Allocation (percentage)**") 
     ND_weights['Percent Allocation'] = round(ND_weights['Percent Allocation'] * 100,2)
     st.dataframe(ND_weights)
-    latest_prices.columns = ['tickerCost']
-    st.dataframe(latest_prices)
+   
     
            
              
