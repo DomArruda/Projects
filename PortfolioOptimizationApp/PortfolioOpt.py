@@ -94,6 +94,8 @@ def MVO_opt(portfolio):
     st.text('')
     allocation.sort_values(by = ['Number of Stocks'], inplace = True)
     st.dataframe(allocation)
+    st.text('')
+    st.write("Funds remaining (MVO): ${:.2f}".format(leftover))
 
     
 
