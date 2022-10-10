@@ -76,10 +76,11 @@ def MVO_opt(portfolio):
     cleaned_weights.columns = ['Ticker', 'Allocation']
     st.text('')
     st.markdown('**Portfolio Performance**')
-    st.write('Expected Annual Return:           ',str(round(ef.portfolio_performance()[0] * 100, 3)) + '%')
+    st.write('Expected Annual Return (Discrete Allocation):           ',str(round(ef.portfolio_performance()[0] * 100, 3)) + '%')
     st.write('Annual Volatility:           ',str(round(ef.portfolio_performance()[1] * 100, 3)) + '%')
     st.write('Sharpe Ratio:           ',str(round(ef.portfolio_performance()[2], 3)))
     st.text('')
+    st.write('Non-Discrete Allocation: ', cleaned_weights)
     st.text('')
     
     
@@ -112,10 +113,11 @@ def HRP(portfolio):
     hrp.portfolio_performance(verbose=True)
     st.text('')
     st.markdown('**Portfolio Performance**')
-    st.write('Expected Annual Return:           ',str(round(hrp.portfolio_performance()[0] * 100, 3)) + '%')
+    st.write('Expected Annual Return (Discrete Allocation):           ',str(round(hrp.portfolio_performance()[0] * 100, 3)) + '%')
     st.write('Annual Volatility:           ',str(round(hrp.portfolio_performance()[1] * 100, 3)) + '%')
     st.write('Sharpe Ratio:           ',str(round(hrp.portfolio_performance()[2], 3)))
     st.text('')
+    st.write('Non-Discrete Allocation', hrp_weights)
     st.text('')
     
     latest_prices = get_latest_prices(portfolio)
