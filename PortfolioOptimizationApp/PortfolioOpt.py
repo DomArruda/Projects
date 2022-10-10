@@ -96,6 +96,18 @@ def MVO_opt(portfolio):
     st.dataframe(allocation)
     st.text('')
     st.write("Funds remaining (MVO): ${:.2f}".format(leftover))
+    
+    
+    st.markdown("**Non-Discrete Allocation**") 
+    MVO_weights =  pd.DataFrame().append(dict(cleaned_weights), ignore_index = True).T.reset_index()
+    MVO_weights.columns = ['Ticker', 'Percent Allocation']
+    ND_weights = MVO_weights.copy()
+    ND_weights['Latest Prices'] = list(latest_prices) 
+    ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
+    ND_weights.drop(['Percent Allocation', 'Latest Prices'] , axis = 1, inplace = True)
+    ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
+    
+    st.dataframe(ND_weights)
 
     
 
