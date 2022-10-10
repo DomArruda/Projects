@@ -101,7 +101,7 @@ def MVO_opt(portfolio):
     st.markdown("**Non-Discrete Allocation**") 
     MVO_weights =  pd.DataFrame().append(dict(cleaned_weights), ignore_index = True).T.reset_index()
     MVO_weights.columns = ['Ticker', 'Percent Allocation']
-    st.dataframe(MVO_weights)
+    st.write(MVO_weights)
    
 
     
