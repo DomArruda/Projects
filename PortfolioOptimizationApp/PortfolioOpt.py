@@ -129,7 +129,6 @@ def HRP(portfolio):
     allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
     allocation.columns = ['Ticker', 'Number of stocks']
     print("Discrete allocation (HRP):", allocation)
-    st.write('Non-Discrete Allocation', ND_weights)
     print("Funds remaining (HRP): ${:.2f}".format(leftover))
     
     
@@ -141,6 +140,8 @@ def HRP(portfolio):
     st.markdown("**Discrete stock allocation:**")
     st.text('')
     st.dataframe(allocation)
+    st.text('')
+    st.write('Non-Discrete Allocation', ND_weights)
     st.write(("Funds remaining: ${:.2f}".format(leftover)))
     st.text('')
 
