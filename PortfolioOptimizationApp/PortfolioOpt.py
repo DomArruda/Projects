@@ -80,7 +80,6 @@ def MVO_opt(portfolio):
     st.write('Annual Volatility:           ',str(round(ef.portfolio_performance()[1] * 100, 3)) + '%')
     st.write('Sharpe Ratio:           ',str(round(ef.portfolio_performance()[2], 3)))
     st.text('')
-    st.write('Non-Discrete Allocation: ', cleaned_weights)
     st.text('')
     
     
@@ -96,7 +95,7 @@ def MVO_opt(portfolio):
     st.dataframe(allocation)
     st.write(("Funds remaining: ${:.2f}".format(leftover)))
     st.text('')
-    
+    """
     
     st.markdown("**Non-Discrete Allocation**") 
     weights_temp =   pd.DataFrame().append(dict(cleaned_weights), ignore_index = True).T.reset_index()
@@ -109,7 +108,7 @@ def MVO_opt(portfolio):
     
     st.dataframe(ND_weights)
 
-    
+    """
     
 
 
