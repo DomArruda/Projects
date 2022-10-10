@@ -122,7 +122,7 @@ def HRP(portfolio):
     latest_prices = get_latest_prices(portfolio)
     da_hrp = DiscreteAllocation(hrp_weights, latest_prices, total_portfolio_value= port_value)
     
-    hrp_weights_temp =  pd.DataFrame().append(hrp_weights), ignore_index = True).T.reset_index() 
+    hrp_weights_temp =   pd.DataFrame().append(dict(hrp_weights), ignore_index = True).T.reset_index()
     hrp_weights_temp.columns = ['Ticker', 'Number of stocks']
     allocation, leftover = da_hrp.greedy_portfolio()
     allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
