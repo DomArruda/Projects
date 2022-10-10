@@ -89,6 +89,10 @@ def MVO_opt(portfolio):
     allocation, leftover = da.greedy_portfolio()
     allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
     allocation.columns = ['Ticker', 'Number of Stocks']
+    
+    st.markdown("**Discrete stock allocation:**")
+    st.text('')
+    allocation.sort_values(by = ['Number of Stocks'], inplace = True)
 
     
 
