@@ -141,9 +141,10 @@ def HRP(portfolio):
     st.text('')
     st.dataframe(allocation)
     st.text('')
-    st.write(("Funds remaining: ${:.2f}".format(leftover)) 
-     
-    st.markdown("**Non-Discrete stock allocation**") 
+    st.write("Funds remaining (HRP): ${:.2f}".format(leftover))
+    
+           
+             
 
 
 
