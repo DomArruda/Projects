@@ -139,8 +139,8 @@ def HRP(portfolio):
     st.text('')
     st.write("Funds remaining (HRP): ${:.2f}".format(leftover))
     st.markdown("**Non-Discrete Allocation (percentage)**") 
-    ND_weights['Percent Allocation'] = round(ND_weights['Percent Allocation'] * 100,2)
-    st.dataframe(ND_weights)
+    ND_weights['Latest Prices'] = list(latest_prices) 
+    ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['latest_prices']
    
     
            
