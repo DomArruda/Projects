@@ -123,7 +123,7 @@ def HRP(portfolio):
     da_hrp = DiscreteAllocation(hrp_weights, latest_prices, total_portfolio_value= port_value)
     
     hrp_weights_temp =   pd.DataFrame().append(dict(hrp_weights), ignore_index = True).T.reset_index()
-    hrp_weights_temp.columns = ['Ticker', 'Number of stocks']
+    hrp_weights_temp.columns = ['Ticker', 'Percent Allocation']
     ND_weights = hrp_weights_temp.copy()
     allocation, leftover = da_hrp.greedy_portfolio()
     allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
@@ -141,9 +141,9 @@ def HRP(portfolio):
     st.text('')
     st.dataframe(allocation)
     st.text('')
-    st.write('Non-Discrete Allocation', ND_weights)
-    st.write(("Funds remaining: ${:.2f}".format(leftover)))
-    st.text('')
+    st.write(("Funds remaining: ${:.2f}".format(leftover)) 
+     
+    st.markdown("**Non-Discrete stock allocation**") 
 
 
 
