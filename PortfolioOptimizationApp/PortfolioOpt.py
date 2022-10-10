@@ -100,8 +100,7 @@ def MVO_opt(portfolio):
     
     st.markdown("**Non-Discrete Allocation**") 
     st.dataframe(cleaned_weights)
-    st.dataframe(weights)
- 
+    #have to fix from here
    
 
     
