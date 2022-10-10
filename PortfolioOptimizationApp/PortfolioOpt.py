@@ -117,7 +117,6 @@ def HRP(portfolio):
     st.write('Annual Volatility:           ',str(round(hrp.portfolio_performance()[1] * 100, 3)) + '%')
     st.write('Sharpe Ratio:           ',str(round(hrp.portfolio_performance()[2], 3)))
     st.text('')
-    st.write('Non-Discrete Allocation', hrp_weights)
     st.text('')
     
     latest_prices = get_latest_prices(portfolio)
@@ -127,6 +126,7 @@ def HRP(portfolio):
     allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
     allocation.columns = ['Ticker', 'Number of stocks']
     print("Discrete allocation (HRP):", allocation)
+    st.write('Non-Discrete Allocation', round(hrp_weights * 100, 2)      )
     print("Funds remaining (HRP): ${:.2f}".format(leftover))
     
     
