@@ -93,6 +93,7 @@ def MVO_opt(portfolio):
     st.markdown("**Discrete stock allocation:**")
     st.text('')
     allocation.sort_values(by = ['Number of Stocks'], inplace = True)
+    st.dataframe(allocation)
 
     
 
