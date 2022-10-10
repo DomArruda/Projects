@@ -89,12 +89,25 @@ def MVO_opt(portfolio):
     da = DiscreteAllocation(weights, latest_prices, total_portfolio_value=port_value)
     allocation, leftover = da.greedy_portfolio()
     allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
-    allocation.columns = ['Ticker', 'Number of stocks']
+    allocation.columns = ['Ticker', 'Number of Stocks']
     st.markdown("**Discrete stock allocation:**")
     st.text('')
+    allocation.sort_values(by = ['Number of Tickers'], inplace = True)
     st.dataframe(allocation)
     st.write(("Funds remaining: ${:.2f}".format(leftover)))
     st.text('')
+    
+    
+    st.markdown("**Non-Discrete Allocation**") 
+    weights_temp =   pd.DataFrame().append(dict(cleaned_weights), ignore_index = True).T.reset_index()
+    weights_temp.columns = ['Ticker', 'Percent Allocation']
+    ND_weights = weights_temp.copy()
+    ND_weights['Latest Prices'] = list(latest_prices) 
+    ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
+    ND_weights.drop(['Percent Allocation', 'Latest Prices'] , axis = 1, inplace = True)
+    ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
+    
+    st.dataframe(ND_weights)
 
     
     
