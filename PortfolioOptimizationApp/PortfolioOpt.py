@@ -174,7 +174,6 @@ def MCV(portfolio):
     ef_cvar.portfolio_performance(verbose = True)
     st.write('Expected Annual Return (Discrete Allocation):           ',str(round(ef_cvar.portfolio_performance()[0] * 100, 3)) + '%')
     st.write('Annual Volatility:           ',str(round(ef_cvar.portfolio_performance()[1] * 100, 3)) + '%')
-    st.write('Sharpe Ratio:           ', ef_cvar.portfolio_performance(verbose = True) )
     
    
     
