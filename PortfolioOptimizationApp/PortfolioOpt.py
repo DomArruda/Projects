@@ -192,8 +192,14 @@ def MCV(portfolio):
 
 
 ticker_str = st.text_input('Input your list of tickers. Format must follow: "Ticker1, Ticker2, Ticker3..."')
+stock_button = st.button('Not sure what to pick? Download S&P 500 stocks')
+if button not None: 
+    import pandas as pd
+    URL = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    ticker_list = pd.read_html(URL)[0]['Symbol'].tolist()
 stock_list = [i.strip() for i in list(ticker_str.split(','))]
-selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, default = stock_list)
+selected_stocks = st.multiselect('Chosen Stocks: ', options  = ticker_list, default = stock_list)
+
 
 
 start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365)).strftime('%m/%d/%Y'))
