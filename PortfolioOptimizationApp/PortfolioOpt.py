@@ -203,6 +203,8 @@ stock_list = [i.strip('[') for i in stock_list]
 stock_list = [i.strip(']')  for i in stock_list] 
 stock_list = [i.strip('"') for i in stock_list] 
 stock_list = [i.strip('"') for i in stock_list]
+stock_list = [i.rstrip('"') for i in stock_list] 
+stock_list = [i.lstrip('"') for i in stock_list]
 selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, default = stock_list)
 
 
