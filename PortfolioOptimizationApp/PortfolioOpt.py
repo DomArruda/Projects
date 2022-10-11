@@ -217,9 +217,10 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
         st.stop()
     else:
         port_value = float(port_value)
-        opt_list = ['None Selected', 'Mean Variance Optimization', 'Hierarchal Risk Parity', 'Mean Conditional Value at Risk'] 
+        opt_list = ['None Selected', 'Hierarchal Risk Parity', 'Mean Conditional Value at Risk'] 
         choice = st.selectbox('Choose Which Optimization Technique You Would Like To Use: ', opt_list)
         
+        #'Mean Variance Optimization' - Need to fix this one up...
         if choice == opt_list[1]: 
            MVO_opt(portfolio)
         elif choice == opt_list[2]:
