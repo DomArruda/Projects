@@ -225,8 +225,7 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
            MVO_opt(portfolio)
         elif choice == opt_list[2]:
             HRP(portfolio)
-        elif choice == opt_list[3]: 
-            MCV(portfolio)
+      
 else: 
     st.stop()
 
