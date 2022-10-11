@@ -115,7 +115,8 @@ def HRP(portfolio):
     returns = portfolio.pct_change().dropna()
     
     hrp = HRPOpt(returns)
-    hrp_weights = hrp.optimize()
+    hrp_weights = hrp.min_volatility() 
+    
     hrp.portfolio_performance(verbose=True)
     st.text('')
     st.markdown('**Portfolio Performance**')
