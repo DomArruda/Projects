@@ -197,6 +197,7 @@ if stock_button != False:
     URL = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     ticker_list = pd.read_html(URL)[0]['Symbol'].tolist()
 stock_list = [i.strip() for i in list(ticker_str.split(','))]
+st.write(ticker_list)
 selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, default = stock_list)
 
 
