@@ -193,8 +193,8 @@ def MCV(portfolio):
 
 ticker_str = st.text_input('Input your list of tickers. Format must follow: "Ticker1, Ticker2, Ticker3..."')
 stock_button = st.button('Not sure what to pick? Download S&P 500 stocks')
+st.write(stock_button)
 if stock_button != None: 
-    import pandas as pd
     URL = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     ticker_list = pd.read_html(URL)[0]['Symbol'].tolist()
 stock_list = [i.strip() for i in list(ticker_str.split(','))]
