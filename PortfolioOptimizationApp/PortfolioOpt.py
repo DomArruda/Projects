@@ -196,9 +196,9 @@ stock_button = st.button('Not sure what to pick? Download S&P 500 stock tickers'
 if stock_button != False: 
     URL = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     ticker_list = pd.read_html(URL)[0]['Symbol'].tolist()
-    st.markdown('**Tickers for S&P 500 **')
+    st.markdown('**Tickers for S&P 500**')
     st.text('')
-    st.markdown('**Click on the arrow to view stock tickers. Click on clipboard after clicking the arrow to copy all ticker symbols**')
+    st.markdown('**Click on the arrow to view stock tickers. After, click on top clipboard to copy all ticker symbols**')
     st.write(ticker_list)
 stock_list = [i.strip() for i in list(ticker_str.split(','))]
 stock_list = [i.strip('[') for i in stock_list] 
