@@ -221,10 +221,10 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
         choice = st.selectbox('Choose Which Optimization Technique You Would Like To Use: ', opt_list)
         
         #'Mean Variance Optimization' - Need to fix this one up...
-        if choice == opt_list[1]: 
-           MVO_opt(portfolio)
-        elif choice == opt_list[2]:
-            HRP(portfolio)
+        if choice == opt_list[0]: 
+           HRP(portfolio)
+        elif choice == opt_list[1]:
+            MCV(portfolio)
       
 else: 
     st.stop()
