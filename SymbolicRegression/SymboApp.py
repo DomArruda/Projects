@@ -174,11 +174,12 @@ def run_regression(uploaded_file):
         st.latex(f'MAE: {mae_error:.2f}')
         st.latex(f'R-Squared : {r2:.5f}')
 
-button = st.button('Not sure what data to use? Click here to upload a mock physics dataset!')
-uploaded_file = pd.read_csv('SymbolicRegression/PhysicsData.csv')
+
+
 
 with st.sidebar.header('**1.Upload your CSV data**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
+    uploaded_file = pd.read_csv('SymbolicRegression/PhysicsData.csv')
     
     
  
