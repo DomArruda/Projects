@@ -180,16 +180,14 @@ def run_regression(uploaded_file):
 with st.sidebar.header('**1.Upload your CSV data**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
   
-data_button = st.button('Not sure what data to use? Click here for a mock physics dataset!')
+#data_button = st.button('Not sure what data to use? Click here for a mock physics dataset!')
 mock_data = pd.read_csv('SymbolicRegression/PhysicsData.csv')
 
     
 if uploaded_file != None:
     run_regression(uploaded_file)
     
-elif data_button != False: 
-    run_regression(mock_data)
-    
+
     
     
         
