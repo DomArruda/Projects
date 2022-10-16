@@ -181,11 +181,9 @@ with st.sidebar.header('**1.Upload your CSV data**'):
     button = st.button('Not sure what data to use? Click here to upload a mock physics dataset!')
     
 if button != False: 
-    uploaded_file = pd.read_csv('https://raw.githubusercontent.com/DomArruda/Projects/main/SymbolicRegression/PhysicsData.csv')
+    uploaded_file = pd.read_csv('SymbolicRegression/PhysicsData.csv')
+    
  
-
-    
-    
     
 if uploaded_file != None:
     run_regression(uploaded_file)
