@@ -211,7 +211,7 @@ selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, defau
 
 
 
-start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365)).strftime('%m/%d/%Y'))
+start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 366)).strftime('%m/%d/%Y'))
 end_date = st.text_input('Write your stock end date in month/day/year format', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
 
 
