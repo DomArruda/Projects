@@ -50,12 +50,6 @@ def reviews_csv(reviews):
         return data
     
 
-#review_df = reviews('https://www.yelp.com/biz/moonstar-chinese-restaurant-east-providence')
-#%% 
-
-#image = Image.open('Downloads/sentiment.jpg')
-#st.image(image, caption = "Python Sentiment Analysis", use_column_width = True)
-
 
 st.title('Jim Bot :robot_face:')
 with st.sidebar.header('**Upload your CSV data.**'):
