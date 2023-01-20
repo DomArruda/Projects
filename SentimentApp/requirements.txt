@@ -1,0 +1,9 @@
+streamlit
+beautifulsoup4
+numpy
+pandas
+torch 
+transformers
+PIL
+plotly
+csv 
