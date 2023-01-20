@@ -78,9 +78,9 @@ elif uploaded_link != '' and uploaded_file is None:
     st.markdown('**Successfully received link!**') 
     review_data = reviews_scrape(uploaded_link)
     st.dataframe(review_data, use_container_width= True)
-    review_csv = review_data.to_csv(index = False).encode('utf-8')
-    fig = px.histogram(review_csv,  x= 'score', title = 'Histogram of Stores')
+    fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Stores')
     st.plotly_chart(fig)
+    review_csv = review_data.to_csv(index = False).encode('utf-8')
     st.download_button('Click here to download your sentiment report', 
                        review_csv, 'sentiment.csv')
     
