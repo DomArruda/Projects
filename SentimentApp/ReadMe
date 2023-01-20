@@ -1,0 +1,1 @@
+This is a sentiment analysis app made with BERT for fun. It can either accept csv files or scrape reviews via a link (currently only works with Yelp). 
