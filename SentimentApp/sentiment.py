@@ -67,6 +67,7 @@ if uploaded_link == '' and uploaded_file is not None:
     review_df = reviews_csv(uploaded_file)
     st.dataframe(review_df, use_container_width= True)
     fig = px.histogram(review_df, x = 'score', title = 'Histogram of Scores')
+    fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
     st.plotly_chart(fig)
     review_csv = review_df.to_csv(index = False).encode('utf-8')
     st.download_button('Click below to download your sentiment report: ', 
@@ -79,6 +80,7 @@ elif uploaded_link != '' and uploaded_file is None:
     review_data = reviews_scrape(uploaded_link)
     st.dataframe(review_data, use_container_width= True)
     fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Stores')
+    fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
     st.plotly_chart(fig)
     review_csv = review_data.to_csv(index = False).encode('utf-8')
     st.download_button('Click here to download your sentiment report', 
