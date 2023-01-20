@@ -2,7 +2,8 @@ streamlit
 beautifulsoup4
 numpy
 pandas
-torch 
+torch
+torchvision
 transformers
 plotly
 
