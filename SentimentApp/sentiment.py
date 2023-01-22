@@ -1,5 +1,3 @@
-
-
 import streamlit as st 
 from bs4 import BeautifulSoup
 import numpy as np
@@ -27,15 +25,25 @@ def sentiment_score(review):
     result = model(tokens)
     return int(torch.argmax(result.logits))+1 
 
-def reviews_scrape(reviews: str): 
-    r = requests.get(reviews)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    regex = re.compile('.*comment.*')
-    results = soup.find_all('p', {'class':regex})
-    reviews = [result.text for result in results] #make sure to learn this
-    df = pd.DataFrame(np.array(reviews), columns=['review'])
-    df['score'] = df['review'].apply(lambda x: sentiment_score(x[-512:])) 
-    return df
+def reviews_scrape(reviews: str, num_pages): 
+        
+        link_list = []
+        df_list = []
+        link_list.append(reviews)
+        for i in range(1, num_pages): 
+            next_page = reviews + '?start=' + str(i) + '0'
+            link_list.append(next_page)
+        for j in link_list:
+            r = requests.get(j)
+            soup = BeautifulSoup(r.text, 'html.parser')
+            regex = re.compile('.*comment.*')
+            results = soup.find_all('p', {'class':regex})
+            reviews = [result.text for result in results] 
+            df = pd.DataFrame(np.array(reviews), columns=['review'])
+            df['score'] = df['review'].apply(lambda x: sentiment_score(x[-512:])) 
+            df_list.append(df)
+        merged = pd.concat(df_list)
+        return merged
 
 def reviews_csv(reviews): 
     data = pd.read_csv(reviews)
@@ -60,6 +68,9 @@ with st.sidebar.header('**Upload your CSV data.**'):
 with st.sidebar.header('Upload reviews via website link: '):
     uploaded_link = st.text_input('Paste your website link here: ', placeholder = '')
 
+with st.sidebar.header('Upload the number of pages to grab reviews from'):
+    num_pages = int(st.number_input('Enter the number of pages to scrape:', step = 1))
+
 
 
 if uploaded_link == '' and uploaded_file is not None:
@@ -67,32 +78,33 @@ if uploaded_link == '' and uploaded_file is not None:
     review_df = reviews_csv(uploaded_file)
     st.dataframe(review_df, use_container_width= True)
     fig = px.histogram(review_df, x = 'score', title = 'Histogram of Scores')
+    
     fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
+    
     st.plotly_chart(fig)
     review_csv = review_df.to_csv(index = False).encode('utf-8')
     st.download_button('Click below to download your sentiment report: ', 
                        review_csv, 'sentiment.csv')
-
+    
     
 
-elif uploaded_link != '' and uploaded_file is None: 
+elif uploaded_link != '' and num_pages is not None and uploaded_file is None: 
     st.markdown('**Successfully received link!**') 
-    review_data = reviews_scrape(uploaded_link)
+    review_data = reviews_scrape(uploaded_link, num_pages)
+    review_data.reset_index(inplace= True)
     st.dataframe(review_data, use_container_width= True)
     fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Stores')
+    
     fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
+    
     st.plotly_chart(fig)
     review_csv = review_data.to_csv(index = False).encode('utf-8')
     st.download_button('Click here to download your sentiment report', 
                        review_csv, 'sentiment.csv')
-
+    
     
     
     
 else: 
     st.stop()
-
-
-
-
 
