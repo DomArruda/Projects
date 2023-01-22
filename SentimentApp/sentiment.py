@@ -91,7 +91,7 @@ if uploaded_link == '' and uploaded_file is not None:
 elif uploaded_link != '' and num_pages is not None and uploaded_file is None: 
     st.markdown('**Successfully received link!**') 
     review_data = reviews_scrape(uploaded_link, num_pages)
-    review_data.reset_index(inplace= True)
+    review_data.reset_index(inplace= True, drop = True)
     st.dataframe(review_data, use_container_width= True)
     fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Stores')
     
