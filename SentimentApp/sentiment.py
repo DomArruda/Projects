@@ -93,7 +93,7 @@ elif uploaded_link != '' and num_pages is not None and uploaded_file is None:
     review_data = reviews_scrape(uploaded_link, num_pages)
     review_data.reset_index(inplace= True, drop = True)
     st.dataframe(review_data, use_container_width= True)
-    fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Stores')
+    fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Scores')
     
     fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
     
