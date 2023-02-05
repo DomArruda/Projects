@@ -46,14 +46,18 @@ def reviews_scrape(reviews: str, num_pages):
         return merged
 
 def reviews_csv(reviews): 
-    data = pd.read_csv(reviews)
+    data = pd.read_csv(reviews, header = "infer")
     data_columns = data.columns 
     data_columns = data_columns.insert(0, 'None Selected')
     selected_column = st.selectbox('Which column contains the reviews?', data_columns)
+    totalReviews = len(data)
+    st.text(f'Total number of reviews detected: {totalReviews}')
+    numReviews = int(st.number_input('How many reviews should I analyze? '))
     #df = pd.DataFrame(data, columns=['review'])
-    if selected_column == data_columns[0]: 
+    if selected_column == data_columns[0] or numReviews <= 0 or numReviews > totalReviews  : 
         st.stop()
     else:
+        data = data.iloc[:numReviews]
         data['score'] = data[selected_column].apply(lambda x: sentiment_score(x[-512:])) 
         return data
     
@@ -63,13 +67,14 @@ st.title('Jim Bot :robot_face:')
 with st.sidebar.header('**Upload your CSV data.**'):
 
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
-    
+
 
 with st.sidebar.header('Upload reviews via website link: '):
     uploaded_link = st.text_input('Paste your website link here: ', placeholder = '')
 
 with st.sidebar.header('Upload the number of pages to grab reviews from'):
     num_pages = int(st.number_input('Enter the number of pages to scrape:', step = 1))
+
 
 
 
