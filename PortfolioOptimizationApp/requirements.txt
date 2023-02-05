@@ -5,5 +5,4 @@ torch
 streamlit
 pandas_datareader
 PyPortfolioOpt
-sklearn
 scikit-learn
