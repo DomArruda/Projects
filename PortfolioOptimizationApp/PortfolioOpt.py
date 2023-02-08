@@ -2,6 +2,7 @@
 
 import pandas as pd
 import yfinance as yf
+import plotly.express as plx
 import datetime
 import time
 import requests
@@ -230,6 +231,8 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
     portfolio.index = portfolio['Date']
     portfolio.drop(['Date'], inplace = True, axis = 1)
     st.write(portfolio)
+    fig = plx.imshow(portfolio.corr(method = 'spearman').round(2), text_auto=True)
+    st.plotly_chart(fig)
     port_value = st.text_input('What amount do you plan on investing in your portfolio?')
     if port_value == '' or port_value is None: 
         st.stop()
