@@ -6,3 +6,4 @@ streamlit
 pandas_datareader
 PyPortfolioOpt
 scikit-learn
+plotly
