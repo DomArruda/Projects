@@ -23,6 +23,7 @@ from random import randint
 from pypfopt import HRPOpt
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
 st.title('Python Portfolio Optimization')
+st.image(image,caption = 'Portfolio Optimization', use_column_width = True)
     
     
 
