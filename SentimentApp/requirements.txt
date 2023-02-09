@@ -6,4 +6,5 @@ torch
 torchvision
 transformers
 plotly
+pyodbc
 
