@@ -26,9 +26,6 @@ st.title('Python Portfolio Optimization')
 st.image(image,caption = '', use_column_width = True)
     
     
-
-#%%
-
 from datetime import date
 from datetime import timedelta
 
@@ -219,34 +216,43 @@ end_date = st.text_input('Write your stock end date in month/day/year format', (
 
 
 if "" not in selected_stocks  and start_date != False and end_date != False:
-    portfolio = create_portfolio(selected_stocks, start_date, end_date)
-    
-    #st.write(type(portfolio))
-    if portfolio is None:
-        st.text('')
-        st.write('Invalid Stock Selection')
-        st.stop()
+    try:
+        portfolio = create_portfolio(selected_stocks, start_date, end_date)
         
-    portfolio.to_csv("portfolio.csv")
-    portfolio = pd.read_csv("portfolio.csv")    
-    portfolio.index = portfolio['Date']
-    portfolio.drop(['Date'], inplace = True, axis = 1)
-    st.write(portfolio)
-    fig = plx.imshow(portfolio.corr(method = 'spearman').round(2), title = 'Stock Correlations:', text_auto=True)
-    st.plotly_chart(fig)
-    port_value = st.text_input('What amount do you plan on investing in your portfolio?')
-    if port_value == '' or port_value is None: 
-        st.stop()
-    else:
-        port_value = float(port_value)
-        opt_list = ['None Selected', 'Hierarchical Risk Parity', 'Mean Conditional Value at Risk'] 
-        choice = st.selectbox('Choose Which Optimization Technique You Would Like To Use: ', opt_list)
-        
-        #'Mean Variance Optimization' - Need to fix this one up...
-        if choice == opt_list[1]: 
-           HRP(portfolio)
-        elif choice == opt_list[2]:
-            MCV(portfolio)
+        #st.write(type(portfolio))
+        if portfolio is None:
+            st.text('')
+            st.write('Invalid Stock Selection')
+            st.stop()
+            
+        #portfolio.to_csv("portfolio.csv")
+        #portfolio = pd.read_csv("portfolio.csv")    
+        #portfolio.index = portfolio['Date']
+        #portfolio.drop(['Date'], inplace = True, axis = 1)
+        st.write(portfolio)
+        fig = plx.imshow(portfolio.corr(method = 'spearman').round(2), title = 'Stock Correlations:', text_auto = True)
+        st.plotly_chart(fig)
+        port_value = st.text_input('What amount do you plan on investing in your portfolio?')
+        if port_value == '' or port_value is None: 
+            st.stop()
+        else:
+            port_value = float(port_value)
+            opt_list = ['None Selected', 'Hierarchical Risk Parity', 'Mean Conditional Value at Risk'] 
+            choice = st.selectbox('Choose Which Optimization Technique You Would Like To Use: ', opt_list)
+            
+            #'Mean Variance Optimization' - Need to fix this one up...
+            if choice == opt_list[1]: 
+                try:
+                    HRP(portfolio)
+                except: 
+                    st.text('Error Occured: Please try again')
+            elif choice == opt_list[2]:
+                try:
+                    MCV(portfolio)
+                except: 
+                    st.text('Error Occured - Please try again')
+    except: 
+            st.text('')
       
 else: 
     st.stop()
