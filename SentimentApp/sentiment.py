@@ -106,7 +106,16 @@ with st.sidebar.header('Connect to SQL: '):
 with st.sidebar.header('Please enter the name of the database: '):
     database =  st.text_input('Please enter the name of the database: ')
 
+st.markdown('**Please upload a CSV, a website link, or connect to SQL.**') 
+st.text('')
+test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
 
+if test_text != '': 
+    try: 
+        sentScore = sentiment_score(test_text)
+        st.markdown('**Sentiment Score: ' + str(sentScore) + '**')
+    except: 
+        st.text('')
 
 if uploaded_link == '' and uploaded_file is not None:
     st.markdown('**Successfully uploaded csv!**')
