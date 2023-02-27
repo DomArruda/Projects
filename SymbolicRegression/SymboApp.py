@@ -188,7 +188,10 @@ st.download_button('Click here to download mock physics data!', data_csv, 'Physi
 
 
 if uploaded_file != None:
-    run_regression(uploaded_file)
+    try: 
+        run_regression(uploaded_file)
+    except: 
+        print('An error had occured. Please try again') 
     
 
     
