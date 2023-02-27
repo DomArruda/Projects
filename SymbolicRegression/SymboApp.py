@@ -183,7 +183,7 @@ with st.sidebar.header('**1.Upload your CSV data**'):
 
 mock_data = pd.read_csv('SymbolicRegression/PhysicsData.csv')
 data_csv = mock_data.to_csv(index = False).encode('utf-8')
-st.download_button('Click here to download mock physics data!', data_csv, 'sentiment.csv')
+st.download_button('Click here to download mock physics data!', data_csv, 'PhysicsData.csv')
     
 
 
