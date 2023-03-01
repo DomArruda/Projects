@@ -89,9 +89,6 @@ st.title('Jim Bot :robot_face:')
 with st.sidebar.header('**Upload your CSV data.**'):
 
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
-    mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
-    data_csv = mock_data.to_csv(index = False).encode('utf-8')
-    st.download_button('Click here to download sample data!', data_csv, 'AmazonReviews.csv')
     
 
 
@@ -114,6 +111,9 @@ with st.sidebar.header('Please enter the name of the database: '):
 st.markdown('**Please upload a CSV, a website link, or connect to SQL.**') 
 st.text('')
 test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
+mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
+data_csv = mock_data.to_csv(index = False).encode('utf-8')
+st.download_button('Click here to download sample data!', data_csv, 'AmazonReviews.csv')
 
 if test_text != '': 
     try: 
