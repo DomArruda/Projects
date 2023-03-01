@@ -91,6 +91,9 @@ with st.sidebar.header('**Upload your CSV data.**'):
    
 
 
+with st.sidebar.header("Paste a website link below to scrape reviews!"): 
+    st.text('')
+            
 with st.sidebar.header('Upload reviews via website link: '):
     uploaded_link = st.text_input('Paste your website link here: ', placeholder = '')
 
