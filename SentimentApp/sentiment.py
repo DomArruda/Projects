@@ -87,14 +87,14 @@ def SQL_scrape(query, conn):
 
 st.title('Jim Bot :robot_face:')
 with st.sidebar.header('**Upload your CSV data.**'):
-
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
-    
-
+   
 
 
 with st.sidebar.header('Upload reviews via website link: '):
     uploaded_link = st.text_input('Paste your website link here: ', placeholder = '')
+    st.text('')
+    st.text('')
 
 with st.sidebar.header('Upload the number of pages to grab reviews from'):
     num_pages = int(st.number_input('Enter the number of pages to scrape:', step = 1))
