@@ -113,7 +113,7 @@ st.text('')
 test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
 mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
 data_csv = mock_data.to_csv(index = False).encode('utf-8')
-st.download_button('Click here to download sample data!', data_csv, 'AmazonReviews.csv')
+st.download_button('Click here to download sample product review data!', data_csv, 'AmazonReviews.csv')
 
 if test_text != '': 
     try: 
