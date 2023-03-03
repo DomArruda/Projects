@@ -102,12 +102,7 @@ st.text('')
 
 with st.sidebar.header('**Upload your CSV data.**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
-    try:
-        mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
-        data_csv = mock_data.to_csv(index = False).encode('utf-8')
-        st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
-    except: 
-        st.text('')
+   
         
    
 
@@ -131,6 +126,12 @@ with st.sidebar.header('Please enter the name of the database: '):
     database =  st.text_input('Please enter the name of the database: ')
 
 st.header('Please Upload A CSV, Website Link, Or Connect To SQL')
+try:
+     mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
+     data_csv = mock_data.to_csv(index = False).encode('utf-8')
+     st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+except: 
+     st.text('')
 st.text('')
 test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
 st.text('')
