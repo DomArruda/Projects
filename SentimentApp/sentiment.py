@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  3 10:04:12 2023
-
-@author: darruda
-"""
 import streamlit as st 
 from bs4 import BeautifulSoup
 import numpy as np
@@ -93,8 +87,13 @@ def SQL_scrape(query, conn):
         data = data.iloc[:numReviews]
         data['score'] = data[selected_column].apply(lambda x: sentiment_score(x[-512:])) 
         return data
+    
+
 
 st.title('Jim Bot :robot_face:')
+st.text('')
+st.text('')
+
 with st.sidebar.header('**Upload your CSV data.**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
    
@@ -107,7 +106,7 @@ with st.sidebar.header('Upload reviews via website link: '):
 
 
 with st.sidebar.header('Upload the number of pages to grab reviews from'):
-    num_pages = int(st.number_input('Enter the number of pages to scrape:', step = 1))
+    num_pages = int(st.number_input('Enter the number of pages to scrape:', step = 1, min_value = 1))
 
 
 with st.sidebar.header('Connect to SQL: '): 
@@ -118,10 +117,13 @@ with st.sidebar.header('Connect to SQL: '):
 with st.sidebar.header('Please enter the name of the database: '):
     database =  st.text_input('Please enter the name of the database: ')
 
-st.markdown('**Please upload a CSV, a website link, or connect to SQL.**') 
+st.header('Please Upload A CSV, Website Link, Or Connect To SQL')
 st.text('')
 test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
-
+st.text('')
+st.text('')
+st.text('')
+st.text('')
 try:
     mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
     data_csv = mock_data.to_csv(index = False).encode('utf-8')
