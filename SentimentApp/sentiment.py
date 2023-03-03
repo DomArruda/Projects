@@ -98,7 +98,6 @@ def SQL_scrape(query, conn):
 
 st.title('Jim Bot :robot_face:')
 st.text('')
-st.text('')
 
 with st.sidebar.header('**Upload your CSV data.**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
@@ -132,6 +131,9 @@ try:
      st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
 except: 
      st.text('')
+        
+st.text('')
+st.text('')
 st.text('')
 test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
 st.text('')
