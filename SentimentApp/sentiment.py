@@ -98,6 +98,7 @@ def SQL_scrape(query, conn):
 
 st.title('Jim Bot :robot_face:')
 st.text('')
+st.text('')
 
 with st.sidebar.header('**Upload your CSV data.**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
