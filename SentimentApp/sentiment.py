@@ -100,7 +100,7 @@ st.title('Jim Bot :robot_face:')
 st.text('')
 st.text('')
 
-with st.sidebar.header('**Upload your CSV data.**'):
+with st.sidebar.header('**Upload your CSV or sample data**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
    
         
