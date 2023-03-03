@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar  3 10:04:12 2023
+
+@author: darruda
+"""
 import streamlit as st 
 from bs4 import BeautifulSoup
 import numpy as np
@@ -96,6 +102,13 @@ st.text('')
 
 with st.sidebar.header('**Upload your CSV data.**'):
     uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
+    try:
+        mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
+        data_csv = mock_data.to_csv(index = False).encode('utf-8')
+        st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+    except: 
+        st.text('')
+        
    
 
 
@@ -124,12 +137,7 @@ st.text('')
 st.text('')
 st.text('')
 st.text('')
-try:
-    mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
-    data_csv = mock_data.to_csv(index = False).encode('utf-8')
-    st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
-except: 
-    st.text('')
+
 
 
 if test_text != '': 
