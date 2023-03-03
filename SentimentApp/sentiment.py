@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar  3 10:04:12 2023
+
+@author: darruda
+"""
 import streamlit as st 
 from bs4 import BeautifulSoup
 import numpy as np
@@ -28,6 +34,9 @@ def load_tokenizer(boolean):
 
 model = load_model(True)
 tokenizer = load_tokenizer(True)
+
+sentimentDict = {'1': 'Very Negative', '2': 'Negative', '3': 'Neutral', '4': 'Positive', '5': 'Very Positive'}
+
 
 def sentiment_score(review):
     tokens = tokenizer.encode(review, return_tensors='pt')
@@ -112,14 +121,20 @@ with st.sidebar.header('Please enter the name of the database: '):
 st.markdown('**Please upload a CSV, a website link, or connect to SQL.**') 
 st.text('')
 test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
-mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
-data_csv = mock_data.to_csv(index = False).encode('utf-8')
-st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+
+try:
+    mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
+    data_csv = mock_data.to_csv(index = False).encode('utf-8')
+    st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+except: 
+    st.text('')
+
 
 if test_text != '': 
     try: 
         sentScore = sentiment_score(test_text)
-        st.markdown('**Sentiment Score: ' + str(sentScore) + '**')
+        sentCategory = sentimentDict[str(sentScore)]
+        st.markdown(f'**Sentiment Score:  ' + str(sentScore) + f' ({sentCategory})' + '**')
     except: 
         st.text('')
 
