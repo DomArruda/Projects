@@ -241,12 +241,12 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
         st.download_button('Click Here To Download Stock Data', 
                        portfolioData, 'StockData.csv')
         
-        correlation_types =   ['pearson', 'kendall', 'spearman']
+        correlation_types =   ['Pearson', 'Kendall', 'Spearman']
     
         corr_option = st.selectbox( 'Pick Correlation Method: ',correlation_types)
           
   
-        fig = plx.imshow(portfolio.corr(method = corr_option).round(2), title = f'Stock Correlations - {corr_option.title()}:', text_auto = True)
+        fig = plx.imshow(portfolio.corr(method = corr_option.lower()).round(2), title = f'Stock Correlations - {corr_option.title()}:', text_auto = True)
         st.plotly_chart(fig)
         port_value = st.text_input('What amount do you plan on investing in your portfolio?')
         if port_value == '' or port_value is None: 
