@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Mar 12 09:29:19 2023
-
 @author: darruda
 """
 
@@ -28,13 +27,15 @@ from pypfopt.efficient_frontier import EfficientCVaR
 from PIL import Image
 from random import randint
 from pypfopt import HRPOpt
-image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
+import numpy as np 
+Image.open('PortfolioOptimizationApp/optGraph.jpg')
 st.title('Python Portfolio Optimization')
 st.image(image,caption = '', use_column_width = True)
     
     
 from datetime import date
 from datetime import timedelta
+
 
 
 def create_portfolio(tick_list, start_date, end_date): 
@@ -195,6 +196,26 @@ def MCV(portfolio):
     st.dataframe(allocation)
     st.write(("Funds remaining: ${:.2f}".format(leftover)))
     st.text('')
+    
+def hedgeify(portfolio, corr, lower_bound, upper_bound):
+  corr_matrix = portfolio.corr(method = corr)
+  #.rename_axis(None).rename_axis(None, axis = 1)
+  correlationData = pd.DataFrame(corr_matrix.stack().reset_index()).rename(columns = {'level_0': 'Stock1', 'level_1': 'Stock2', 0: 'Correlation'}) 
+  correlationData['Same Stock'] = correlationData['Stock1'] == correlationData['Stock2']
+  correlationData = correlationData[ correlationData['Same Stock'] != True]
+
+  
+  correlationData = correlationData[ (correlationData['Correlation'] >= lower_bound) & (correlationData['Correlation'] <= upper_bound)]
+
+  allStocks = list(set(correlationData['Stock1'].to_list() + correlationData['Stock2'].to_list()))
+
+
+  if 'Date' in list(portfolio.columns): 
+    portfolio = portfolio[allStocks + 'Date']
+  else: 
+    portfolio= portfolio[allStocks]
+
+  return portfolio 
 
 #%%
 
@@ -248,6 +269,34 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
   
         fig = plx.imshow(portfolio.corr(method = corr_option.lower()).round(2), title = f'Stock Correlations - {corr_option.title()}:', text_auto = True)
         st.plotly_chart(fig)
+     
+        correlation_values = np.arange(start = -1.00, stop = 1.01, step = 0.01)
+        correlation_values = [round(i,2) for i in correlation_values]
+        lower_bound, upper_bound = ( st.select_slider('Filter Portfolio By Correlation Range', options = correlation_values,
+                         value = (min(correlation_values), max(correlation_values))))
+        lower_bound, upper_bound = float(lower_bound), float(upper_bound)
+         
+        if lower_bound != min(correlation_values) or upper_bound != max(correlation_values):
+            portfolio = hedgeify(portfolio, corr = corr_option.lower(), lower_bound = lower_bound, upper_bound= upper_bound) 
+            st.write(portfolio)
+            portfolioData = portfolio.to_csv(index = True).encode('utf-8')
+            st.download_button('Click Here To Download Filtered Stock Data', 
+                           portfolioData, 'StockData.csv')
+            fig = plx.imshow(portfolio.corr(method = corr_option.lower()).round(2), title = f'Filtered Portfolio Stock Correlations - {corr_option.title()}:', text_auto = True)
+            st.plotly_chart(fig)
+            
+            
+        
+        
+
+        
+        
+        
+        
+        
+        
+        
+        
         port_value = st.text_input('What amount do you plan on investing in your portfolio?')
         if port_value == '' or port_value is None: 
             st.stop()
@@ -267,10 +316,8 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
                     MCV(portfolio)
                 except: 
                     st.text('Error Occured - Please try again')
-    except: 
-            st.text('')
+    except Exception as e : 
+            st.text(e)
       
 else: 
     st.stop()
-
-    
