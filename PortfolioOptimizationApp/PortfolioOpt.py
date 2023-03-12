@@ -217,7 +217,7 @@ selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, defau
 
 
 
-start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 366)).strftime('%m/%d/%Y'))
+start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365 + 1)).strftime('%m/%d/%Y'))
 end_date = st.text_input('Write your stock end date in month/day/year format', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
 
 
@@ -246,7 +246,7 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
         corr_option = st.selectbox( 'Pick Correlation Method: ',correlation_types)
           
   
-        fig = plx.imshow(portfolio.corr(method = corr_option).round(2), title = f'Stock Correlations- {corr_option.title()}:', text_auto = True)
+        fig = plx.imshow(portfolio.corr(method = corr_option).round(2), title = f'Stock Correlations - {corr_option.title()}:', text_auto = True)
         st.plotly_chart(fig)
         port_value = st.text_input('What amount do you plan on investing in your portfolio?')
         if port_value == '' or port_value is None: 
