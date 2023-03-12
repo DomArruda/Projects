@@ -230,7 +230,7 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
         #portfolio.index = portfolio['Date']
         #portfolio.drop(['Date'], inplace = True, axis = 1)
         st.write(portfolio)
-        portfolioData = portfolio.to_csv(index = False).encode('utf-8')
+        portfolioData = portfolio.to_csv(index = True).encode('utf-8')
         st.download_button('Click Here To Download Stock Data', 
                        portfolioData, 'StockData.csv')
     
