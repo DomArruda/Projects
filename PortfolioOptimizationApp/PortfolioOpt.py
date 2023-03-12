@@ -29,7 +29,7 @@ from random import randint
 from pypfopt import HRPOpt
 import numpy as np 
 #Image.open('PortfolioOptimizationApp/optGraph.jpg')
-#st.title('Python Portfolio Optimization')
+st.title('Python Portfolio Optimization')
 #st.image(image,caption = '', use_column_width = True)
     
     
