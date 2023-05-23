@@ -2,9 +2,16 @@ from textblob import TextBlob
 import nltk
 import spacy
 import streamlit as st
+import subprocess
+cmd = ['python3','-m','textblob.download_corpora']
 nltk.download('brown')
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
+
+
+
+subprocess.run(cmd)
+print("Working")
 nlp = spacy.load("en_core_web_sm")
 import PyPDF2
 
