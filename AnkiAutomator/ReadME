@@ -1,0 +1,5 @@
+This app uses Natural Lanaguage Processing/AI to automate the generation of
+Anki Flashcards. Currently there are two ways to use it: either by directly pasting
+text, or by uploading a PDF. Future plans involves using AI to summarize text and better
+identifying the optimal words to "mask" in each question. Options such as scraping
+websites, word documents, and videos will also be included.
