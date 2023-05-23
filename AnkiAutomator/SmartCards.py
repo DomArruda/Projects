@@ -2,9 +2,7 @@ from textblob import TextBlob
 import nltk
 import spacy
 import streamlit as st
-import subprocess
-cmd = ['spacy', 'download en_core_web_sm']
-subprocess.run(cmd)
+
 nltk.download('brown')
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
