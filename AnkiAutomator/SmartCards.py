@@ -1,17 +1,14 @@
 from textblob import TextBlob
-import nltk
+import 
+
 import spacy
 import streamlit as st
 
 nltk.download('brown')
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
-
-
-
-subprocess.run(cmd)
-print("Working")
-nlp = spacy.load("en_core_web_sm")
+import en_core_web_sm
+nlp = en_core_web_sm.load()
 import PyPDF2
 
 import genanki
