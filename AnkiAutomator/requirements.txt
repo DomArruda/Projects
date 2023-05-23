@@ -1,0 +1,6 @@
+PyPDF2
+TextBlob
+nltk
+spacy
+numpy
+genanki
