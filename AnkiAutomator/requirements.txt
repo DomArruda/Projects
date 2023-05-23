@@ -1,4 +1,5 @@
 PyPDF2
+torch
 TextBlob
 nltk
 spacy
