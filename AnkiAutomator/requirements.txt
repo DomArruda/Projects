@@ -1,7 +1,6 @@
 PyPDF2
 torch
 textblob
-textblob.download_corpora
 TextBlob
 nltk
 spacy
