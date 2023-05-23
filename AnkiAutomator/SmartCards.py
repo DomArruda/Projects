@@ -1,5 +1,4 @@
 from textblob import TextBlob
-import 
 
 import spacy
 import streamlit as st
