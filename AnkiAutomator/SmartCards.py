@@ -206,7 +206,7 @@ if optionsChoice == "About":
     st.text("")
     st.markdown("""**1. Upload a PDF And/Or Text Below**""")
     st.markdown("""**2. Type The Name Of Your Anki Deck**""") 
-    st.markdown("""**3. Wait ForFlashcard Generation and Download!**""")
+    st.markdown("""**3. Wait For Flashcard Generation and Download!**""")
 
 st.text('')
 st.text('')
