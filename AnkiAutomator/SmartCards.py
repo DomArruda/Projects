@@ -199,6 +199,11 @@ if optionsChoice == "About":
                 text, or by uploading a PDF. Future plans involves using AI to summarize text and better
                 identifying the optimal words to "mask" in each question. Options such as scraping
                 websites, word documents, and videos will also be included.""")
+    
+    st.markdown("<h2>Steps:<h2>")
+    st.markdown("""**1. Upload a PDF And/Or Text Below**""")
+    st.markdown("""**2. Type The Name Of Your Anki Deck**""") 
+    st.markdown("""**3. Wait ForFlashcard Generation and Download!
 
     st.text('')
 
@@ -234,7 +239,7 @@ if uploadedFile != None and deckName != '':
             st.text('')
             st.text('')
             st.download_button(
-            label='Download Cards (PDF)',
+            label='Download Cards (PDF -> Anki)',
             data= ankiFile,
             file_name= exportedCards,
             mime='text/csv')
