@@ -275,7 +275,7 @@ try:
      
     
 except Exception as exc: 
-    st.markdown("**The App Encountered An Error. Please Try Again.**"")
+    st.markdown("**The App Encountered An Error. Please Try Again.**")
 
 
 
