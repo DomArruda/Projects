@@ -3,9 +3,7 @@ from textblob import TextBlob
 import spacy
 import streamlit as st
 
-nltk.download('brown')
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
+
 import en_core_web_sm
 nlp = en_core_web_sm.load()
 import PyPDF2
@@ -73,22 +71,6 @@ def scrapePDF(pdfFile, pageNums: list = None, returnAll: bool = False):
 
   
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 stringFunction = [
 """
 
@@ -133,12 +115,21 @@ def createFlashCards(article, deckName: str, attachName= 'ankiDeck', splitOn = '
       nounList = nounList[int(len(nounList) * (1 -changeRate)):]
     else: 
       nounList = nounList[:-int(len(nounList) * (1 -changeRate))]
-                                                                          # Let's also get some subjects in here. 
+
+    tempCommentList = [    # had to comment this out since it was ruining it....
+    """                                                              # Let's also get some subjects in here. 
     try: 
       nounList  +=  [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
-
+    
     except Exception as e: 
       print('')
+
+    """
+    ]
+
+    
+
+    
    
     for nouns in nounList: 
       n = n.replace(nouns, '___', 1)
@@ -147,7 +138,10 @@ def createFlashCards(article, deckName: str, attachName= 'ankiDeck', splitOn = '
 
 
     if (n.count(' ') >= 3) and len( str(',   '.join([x.strip('\n') for x in nounList]))) >= 2 :
-      questionAnswerDict[n] = str(',   '.join([x.strip('\n') for x in nounList]))
+      questionAnswer = str(',   '.join([x.strip('\n') for x in nounList]))
+      #st.text(f'Question: {n}\n')
+      #st.text(f'Answer:  {questionAnswer}')
+      questionAnswerDict[n] = questionAnswer
 
         
 
@@ -195,7 +189,7 @@ def createFlashCards(article, deckName: str, attachName= 'ankiDeck', splitOn = '
 st.title('SmartCards :robot_face:')
 
 
-optionsMenu = ["About", "Main App"]
+optionsMenu = ["About", "Hide About"]
 
 optionsChoice = st.sidebar.selectbox("Options", optionsMenu)
 if optionsChoice == "About":
