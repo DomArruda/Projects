@@ -24,7 +24,9 @@ def scrapePDF(pdfFile, pageNums: list = None, returnAll: bool = False):
         reader = PyPDF2.PdfReader(pdfFile)
         numberPages = len(reader.pages)
 
-        st.text('Successfully read PDF!')
+        
+        
+        ('Successfully read PDF!')
         st.text('')
 
         if pageNums == None: 
@@ -205,8 +207,6 @@ if optionsChoice == "About":
     st.markdown("""**1. Upload a PDF And/Or Text Below**""")
     st.markdown("""**2. Type The Name Of Your Anki Deck**""") 
     st.markdown("""**3. Wait ForFlashcard Generation and Download!**""")
-
-    st.text('')
 
 st.text('')
 st.text('')
