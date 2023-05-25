@@ -200,7 +200,8 @@ if optionsChoice == "About":
                 identifying the optimal words to "mask" in each question. Options such as scraping
                 websites, word documents, and videos will also be included.""")
     
-    st.markdown("<h2>Steps:<h2>")
+    st.markdown("## Steps:")
+    st.text("")
     st.markdown("""**1. Upload a PDF And/Or Text Below**""")
     st.markdown("""**2. Type The Name Of Your Anki Deck**""") 
     st.markdown("""**3. Wait ForFlashcard Generation and Download!**""")
