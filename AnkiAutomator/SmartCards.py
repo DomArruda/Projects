@@ -107,7 +107,7 @@ try:
       for inx, n in enumerate(articles): 
         articleList.append(n)
         nounList= (
-             [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
+         [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'i', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
         )
 
 
@@ -139,9 +139,9 @@ try:
           n = n.replace('\n', '')
           n = n.strip()
 
-
-        if (n.count(' ') >= 3) and len( str(',   '.join([x.strip('\n') for x in nounList]))) >= 2 :
-          questionAnswer = str(',   '.join([x.strip('\n') for x in nounList]))
+        questionAnswer = str(',   '.join([x.strip('\n') for x in nounList]));strip().strip()
+        if (n.count(' ') >= 3) and (len(questionAnswer) >= 2) and (not questionAnswer[0].isdigit()) :
+          
           #st.text(f'Question: {n}\n')
           #st.text(f'Answer:  {questionAnswer}')
           questionAnswerDict[n] = questionAnswer
