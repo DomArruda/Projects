@@ -107,7 +107,7 @@ try:
       for inx, n in enumerate(articles): 
         articleList.append(n)
         nounList= (
-            [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['he', 'him', 'i','you', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
+            [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['this','he', 'him', 'i','you', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
         )
 
 
@@ -139,7 +139,7 @@ try:
           n = n.replace('\n', '')
           n = n.strip()
 
-        questionAnswer = str(',   '.join([x.strip('\n') for x in nounList])).strip().strip()
+        questionAnswer = str(',   '.join([x.strip('\n') for x in nounList])).strip().strip().lstrip()
         if (n.count(' ') >= 3) and (len(questionAnswer) >= 2) and (not questionAnswer[0].isdigit()) and (not questionAnswer[0:2].isnumeric()) :
           
           #st.text(f'Question: {n}\n')
