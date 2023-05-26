@@ -139,7 +139,7 @@ try:
           n = n.replace('\n', '')
           n = n.strip()
 
-        questionAnswer = str(',   '.join([x.strip('\n') for x in nounList]));strip().strip()
+        questionAnswer = str(',   '.join([x.strip('\n') for x in nounList])).strip().strip()
         if (n.count(' ') >= 3) and (len(questionAnswer) >= 2) and (not questionAnswer[0].isdigit()) :
           
           #st.text(f'Question: {n}\n')
