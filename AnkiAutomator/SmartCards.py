@@ -107,7 +107,7 @@ try:
       for inx, n in enumerate(articles): 
         articleList.append(n)
        
-        nounList  =  [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
+        nounList  =  [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'i', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
         tempCommentList = [    # had to comment this out since it was ruining it....
         """                                                              # Let's also get some subjects in here. 
         try: 
@@ -122,11 +122,11 @@ try:
 
 
 
+    chosenNoun = np.random.choice(nounList)
 
-        for nouns in nounList: 
-          n = n.replace(nouns, '___', 1)
-          n = n.replace('\n', '')
-          n = n.strip()
+    n = n.replace(chosenNoun, '___', 1)
+    n = n.replace('\n', '')
+    n = n.strip()
 
 
         if (n.count(' ') >= 3) and len( str(',   '.join([x.strip('\n') for x in nounList]))) >= 2 :
