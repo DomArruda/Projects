@@ -107,7 +107,7 @@ try:
       for inx, n in enumerate(articles): 
         articleList.append(n)
         nounList= (
-         [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'i', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
+            [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
         )
 
 
