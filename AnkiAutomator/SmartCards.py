@@ -106,19 +106,8 @@ try:
 
       for inx, n in enumerate(articles): 
         articleList.append(n)
-        nounList= (
-             [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
-        )
-
-
-
-
-        randNum = np.random.choice([0,1])
-        if randNum == 1:
-          nounList = nounList[int(len(nounList) * (1 -changeRate)):]
-        else: 
-          nounList = nounList[:-int(len(nounList) * (1 -changeRate))]
-
+       
+        nounList  =  [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
         tempCommentList = [    # had to comment this out since it was ruining it....
         """                                                              # Let's also get some subjects in here. 
         try: 
