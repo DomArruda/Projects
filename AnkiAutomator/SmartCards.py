@@ -106,8 +106,19 @@ try:
 
       for inx, n in enumerate(articles): 
         articleList.append(n)
-       
-        nounList  =  [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'i', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
+        nounList= (
+             [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
+        )
+
+
+
+
+        randNum = np.random.choice([0,1])
+        if randNum == 1:
+          nounList = nounList[int(len(nounList) * (1 -changeRate)):]
+        else: 
+          nounList = nounList[:-int(len(nounList) * (1 -changeRate))]
+
         tempCommentList = [    # had to comment this out since it was ruining it....
         """                                                              # Let's also get some subjects in here. 
         try: 
@@ -122,11 +133,11 @@ try:
 
 
 
-    chosenNoun = np.random.choice(nounList)
 
-    n = n.replace(chosenNoun, '___', 1)
-    n = n.replace('\n', '')
-    n = n.strip()
+        for nouns in nounList: 
+          n = n.replace(nouns, '___', 1)
+          n = n.replace('\n', '')
+          n = n.strip()
 
 
         if (n.count(' ') >= 3) and len( str(',   '.join([x.strip('\n') for x in nounList]))) >= 2 :
@@ -265,6 +276,5 @@ try:
     
 except Exception as exc: 
     st.markdown("**The App Encountered An Error. Please Try Again.**")
-
 
 
