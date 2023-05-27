@@ -1,218 +1,288 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  3 10:04:12 2023
+from textblob import TextBlob
 
-@author: darruda
-"""
-import streamlit as st 
-from bs4 import BeautifulSoup
+import spacy
+import streamlit as st
+
+
+import en_core_web_sm
+nlp = en_core_web_sm.load()
+import PyPDF2
+
+import genanki
 import numpy as np
-import re
-import pandas as pd
-import requests
-import numpy 
-import torch, torchvision
-from transformers import AutoTokenizer, AutoModelForSequenceClassification 
-from PIL import Image
-import csv
-import plotly.express as px
-import pyodbc
-#%%
+import torch
 
-@st.cache(allow_output_mutation = True)
+st.write(st.secrets['API'])
 
-def load_model(boolean): 
-    if boolean is True: 
-        model = AutoModelForSequenceClassification.from_pretrained('nlptown/bert-base-multilingual-uncased-sentiment')
-        return model 
-@st.cache(allow_output_mutation = True)
-def load_tokenizer(boolean): 
-    if boolean is True: 
-        tokenizer = AutoTokenizer.from_pretrained('nlptown/bert-base-multilingual-uncased-sentiment')
-        return tokenizer
-#%% 
-
-model = load_model(True)
-tokenizer = load_tokenizer(True)
-
-sentimentDict = {'1': 'Very Negative', '2': 'Negative', '3': 'Neutral', '4': 'Positive', '5': 'Very Positive'}
+try: 
 
 
-def sentiment_score(review):
-    tokens = tokenizer.encode(review, return_tensors='pt')
-    result = model(tokens)
-    return int(torch.argmax(result.logits))+1 
+    def scrapePDF(pdfFile, pageNums: list = None, returnAll: bool = False):
 
-def reviews_scrape(reviews: str, num_pages): 
-        
-        link_list = []
-        df_list = []
-        link_list.append(reviews)
-        for i in range(1, num_pages): 
-            next_page = reviews + '?start=' + str(i) + '0'
-            link_list.append(next_page)
-        for j in link_list:
-            r = requests.get(j)
-            soup = BeautifulSoup(r.text, 'html.parser')
-            regex = re.compile('.*comment.*')
-            results = soup.find_all('p', {'class':regex})
-            reviews = [result.text for result in results] 
-            df = pd.DataFrame(np.array(reviews), columns=['review'])
-            df['score'] = df['review'].apply(lambda x: sentiment_score(x[-512:])) 
-            df_list.append(df)
-        merged = pd.concat(df_list)
-        return merged
+        try: 
+            allText = '' 
+            pdfDict = {}
 
-def reviews_csv(reviews): 
-    data = pd.read_csv(reviews, header = "infer")
-    data_columns = data.columns 
-    data_columns = data_columns.insert(0, 'None Selected')
-    selected_column = st.selectbox('Which column contains the reviews?', data_columns)
-    totalReviews = len(data)
-    st.text(f'Total number of reviews detected: {totalReviews}')
-    numReviews = int(st.number_input('How many reviews should I analyze? '))
-    #df = pd.DataFrame(data, columns=['review'])
-    if selected_column == data_columns[0] or numReviews <= 0 or numReviews > totalReviews  : 
-        st.stop()
-    else:
-        data = data.iloc[:numReviews]
-        data['score'] = data[selected_column].apply(lambda x: sentiment_score(x[-512:])) 
-        return data
+
+            reader = PyPDF2.PdfReader(pdfFile)
+            numberPages = len(reader.pages)
+
+
+
+            ('Successfully read PDF!')
+            st.text('')
+
+            if pageNums == None: 
+                lower_page, higher_page = 0, numberPages
+
+            elif (isinstance(pageNums, list) or isinstance(pageNums, tuple)) and len(pageNums) == 2: 
+                lower_page, higher_page = int(pageNums[0] -1), int(pageNums[1])
+            elif (isinstance(pageNums, list) or isinstance(pageNums, tuple)) and len(pageNums) ==1: 
+                lower_page, higher_page = 0 , int(pageNums[1])
+
+            elif isinstance(pageNums, str) or isinstance(pageNums, int) or isinstance(pageNums, float): 
+                lower_page, higher_page = 0,  int(pageNums)
+                try: 
+                    for page_num in range(lower_page, higher_page):
+                        page = reader.pages[page_num]
+                        pageContent= page.extract_text() 
+                        pdfDict[f'Page {page_num+1}'] = pageContent
+                        allText += pageContent
+                except Exception as e:
+                    print()
+
+
+            else: 
+
+                raise TypeError("Invalid Page Number Input")
+
+
+
+            for page_num in range(lower_page, higher_page):
+                    page = reader.pages[page_num]
+                    pageContent= page.extract_text() 
+                    pdfDict[f'Page {page_num+1}'] = pageContent
+                    allText += pageContent
+
+
+            if returnAll == True: 
+                return (allText, pdfDict) 
+            else: 
+                return (allText)
+        except Exception as e: 
+            st.text(e)
+
+
+
     
-def SQL_scrape(query, conn): 
-    data = pd.read_sql(query, conn)
-    data_columns = data.columns 
-    data_columns = data_columns.insert(0, 'None Selected')
-    selected_column = st.selectbox('Which column contains the reviews?', data_columns)
-    totalReviews = len(data)
-    st.text(f'Total number of reviews detected: {totalReviews}')
-    numReviews = int(st.number_input('How many reviews should I analyze? '))
-    if selected_column == data_columns[0] or numReviews <= 0 or numReviews > totalReviews  : 
-        st.stop()
-    else:
-        data = data.iloc[:numReviews]
-        data['score'] = data[selected_column].apply(lambda x: sentiment_score(x[-512:])) 
-        return data
+    def splitSentences(sentences, numSentences: int =3 , splitOn = '.'):
+      """ This function splits on the xth occurence of a string. If 
+      splitting a paragraph every two periods, the numSentences parameter
+      would be 2 and splitOn parameter would be 2 and '.', respectively. 
+      
+      ----------------------------------------------------------------
+      sentences: string - what you want to split into subsentences (or strings) 
+      numSentences: the number of sentences to split on. 
+      splitOn: the character to 'signal' when to split' 
+      ---------------------------------------------------------------
+      """
+      newList = [];
+      sentenceList = sentences.split(splitOn)
+      while len(sentenceList) > 0: 
+        startingStr = ''; 
+        startingStr +=  splitOn.join(sentenceList[:numSentences]) + splitOn
+        newList.append(startingStr)
+        sentenceList = list(sentenceList[numSentences:])
+      return newList
+
+
+
     
 
 
-st.title('Jim Bot :robot_face:')
-st.text('')
-st.text('')
+    def createFlashCards(article, deckName: str, attachName= 'ankiDeck', splitOn = '.',   x_occurence = 1, randChoice = [1,2],changeRate = 0.20, verbose = False, useGPT = False):
+      articleList = []
+      nounList = []
+      answerList = []
+      questionList = []
+      questionAnswerDict = {}
+      if useGPT == False:
+        articles = article.split('.')
+        for inx, n in enumerate(articles): 
+          articleList.append(n)
+          nounList= (
+              [str(x) for x in [nouns for nouns in nlp(n).noun_chunks] if str(x).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it']]
+          )
 
-with st.sidebar.header('**Upload your CSV or Sample Data**'):
-    uploaded_file = st.sidebar.file_uploader("Please Upload a CSV file", type=["csv"])
-   
+
+          randNum = np.random.choice([0,1])
+          if randNum == 1:
+            nounList = nounList[int(len(nounList) * (1 -changeRate)):]
+          else: 
+            nounList = nounList[:-int(len(nounList) * (1 -changeRate))]
+                                                                                # Let's also get some subjects in here. 
+          try: 
+            nounList +  [str(tokens) for tokens in nlp(n) if (tokens.dep_ == "nsubj") and (str(tokens).lower() not in ['he', 'him', 'his', 'her','she', 'they', 'them', 'who','how', 'it'])]
+
+          except Exception as e: 
+            print('')
         
-   
+          for nouns in nounList: 
+            n = n.replace(nouns, '___', 1)
+
+
+          if (len(n) >= 3) and len( str(',   '.join([x.strip('\n') for x in nounList]))) >= 2 :
+            questionAnswerDict[n] = str(',   '.join([x.strip('\n') for x in nounList]))
+            if verbose == True:
+              print(f'\n\n{inx+1}. Question: {n}')
+              print('Answer: ' + ',  '.join(nounList))
+
+      elif useGPT == True: 
+        promptList = []
+        ogPrompt = prompt 
+
+        while len(ogPrompt) > 0: 
+          promptList.append(ogPrompt[:2000]) 
+          ogPrompt = ogPrompt[2000:]
+
+        questionAnswerDict = {}
+        for x in promptList: 
+          responseDict = qaGPT(x)
+          questionAnswerDict.update(responseDict)
 
 
 
             
-with st.sidebar.header('Upload reviews via website link: '):
-    uploaded_link = st.text_input('Want to scrape reviews instead? Paste your website link here: ', placeholder = '')
-
-
-with st.sidebar.header('Upload the number of pages to grab reviews from'):
-    num_pages = int(st.number_input('Enter the number of pages to scrape:', step = 1, min_value = 1))
-
-
-with st.sidebar.header('Connect to SQL: '): 
-    st.header('Connect to SQL')
-with st.sidebar.header('Connect to SQL: '):
-   server =  st.text_input('Please enter the name of the server: ')
-
-with st.sidebar.header('Please enter the name of the database: '):
-    database =  st.text_input('Please enter the name of the database: ')
-
-st.header('Please Upload A CSV, Website Link, Or Connect To SQL')
-try:
-     mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
-     data_csv = mock_data.to_csv(index = False).encode('utf-8')
-     st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
-except: 
-     st.text('')
-        
-st.text('')
-st.text('')
-st.text('')
-test_text = st.text_area("""**Write a mock-review here and I'll return a score from 1 (negative emotion) to 5 (positive emotion):**""")
-st.text('')
-st.text('')
-st.text('')
-st.text('')
 
 
 
-if test_text != '': 
-    try: 
-        sentScore = sentiment_score(test_text)
-        sentCategory = sentimentDict[str(sentScore)]
-        st.markdown(f'**Sentiment Score:  ' + str(sentScore) + f' ({sentCategory})' + '**')
-    except: 
-        st.text('')
+        ankiModel = genanki.Model(
+          2042686211,
+          'Simple Model',
+          fields=[
+              {'name': 'Question'},
+              {'name': 'Answer'},
+          ],
+          templates=[
+              {
+                  'name': 'Card 1',
+                  'qfmt': '{{Question}}',
+                  'afmt': '{{FrontSide}}<hr id="answer"><b>{{Answer}}<b>',
+              },
+          ])
 
-if uploaded_link == '' and uploaded_file is not None:
-    st.markdown('**Successfully uploaded csv!**')
-    review_df = reviews_csv(uploaded_file)
-    st.dataframe(review_df, use_container_width= True)
-    fig = px.histogram(review_df, x = 'score', title = 'Histogram of Scores')
-    
-    fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
-    
-    st.plotly_chart(fig)
-    review_csv = review_df.to_csv(index = False).encode('utf-8')
-    st.download_button('Click below to download your sentiment report: ', 
-                       review_csv, 'sentiment.csv')
-    
-    
 
-elif uploaded_link != '' and num_pages is not None and uploaded_file is None: 
-    st.markdown('**Successfully received link!**') 
-    review_data = reviews_scrape(uploaded_link, num_pages)
-    review_data.reset_index(inplace= True, drop = True)
-    st.dataframe(review_data, use_container_width= True)
-    fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Scores')
-    
-    fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
-    
-    st.plotly_chart(fig)
-    review_csv = review_data.to_csv(index = False).encode('utf-8')
-    st.download_button('Click here to download your sentiment report', 
-                       review_csv, 'sentiment.csv')
-    
-elif  server != '' and database != '' and uploaded_file is None and uploaded_link == '':
-    try: 
-        server_login = f'Server={server};'
-        database_login = f'Database={database};'
-        connection_login = f'Trusted_Connection=yes;'
-    
-        login = 'Driver={SQL Server};' + server_login + database_login + connection_login
-        conn = pyodbc.connect(login)
-        cursor = conn.cursor()
-        
-        query = st.text_area('Please enter your query here')
-        if query == '': 
-            st.stop()
-        else: 
-            try:
-                review_data = SQL_scrape(query, conn)
-                review_data.reset_index(inplace= True, drop = True)
-                st.dataframe(review_data, use_container_width= True)
-                fig = px.histogram(review_data,  x= 'score', title = 'Histogram of Scores')
-                
-                fig.update_traces(marker_line_color = 'white', marker_line_width = 1.0)
-                
-                st.plotly_chart(fig)
-                review_csv = review_data.to_csv(index = False).encode('utf-8')
-                st.download_button('Click here to download your sentiment report', 
-                                   review_csv, 'sentiment.csv')
-                
-            except: 
+        ankiDeck = genanki.Deck(
+            1724897887,
+            deckName)
+      
+
+      inx = 0
+      for keyz, vals in  questionAnswerDict.items():
+        aNote = genanki.Note(
+            model=ankiModel, fields=[keyz , vals ]
+        )
+        ankiDeck.add_note(aNote)
+
+      # Output anki file in desired folder
+      genanki.Package(ankiDeck).write_to_file(
+          f'{attachName}.apkg')
+      
+      print('\n\nGenerated Anki Deck!')
+
+      return questionAnswerDict;
+
+
+
+      
+
+
+
+    st.title('SmartCards :robot_face:')
+
+
+    optionsMenu = ["About", "Hide About"]
+
+    optionsChoice = st.sidebar.selectbox("Options", optionsMenu)
+    if optionsChoice == "About":
+        st.header("About The App:")
+        st.markdown("""This app uses Natural Lanaguage Processing/AI to automate the generation of
+                    Anki Flashcards. Currently **there are two ways to use it**: either by directly pasting
+                    text, or by uploading a PDF. Future plans involves using AI to summarize text and better
+                    identifying the optimal words to "mask" in each question. Options such as scraping
+                    websites, word documents, and videos will also be included.""")
+
+        st.markdown("## Steps:")
+        st.text("")
+        st.markdown("""**1. Upload a PDF And/Or Text Below**""")
+        st.markdown("""**2. Type The Name Of Your Anki Deck**""") 
+        st.markdown("""**3. Wait For Flashcard Generation and Download!**""")
+
+    st.text('')
+    st.text('')
+    test_text = st.text_area("""**Drop Text In Here and I'll Turn Them Into Flashcards**""")
+
+    deckName=  st.text_input('**Please Enter The Name Of The Deck:**')
+    uploadedFile = None;
+
+    with st.sidebar.header('**Upload A PDF To Turn Into Flashcards**'):
+        uploadedFile = st.sidebar.file_uploader("Please Upload a PDF file", type=["pdf"])
+        if uploadedFile != None:
+            reader = PyPDF2.PdfReader(uploadedFile)
+            numberPages = len(reader.pages)
+
+
+            pageVals = np.arange(start = 1, stop = numberPages+1, step = 1)
+            lower_bound, upper_bound = ( st.select_slider('Select Which Pages To Turn Into Flashcards', options = pageVals,
+                                value = (min(pageVals), max(pageVals))))
+
+
+
+
+
+
+
+    if uploadedFile != None and deckName != '': 
+        try: 
+            st.markdown('**Converting Uploaded PDF to Cards! This may take a few minutes.**')
+            exportedCards = createFlashCards(article = scrapePDF(pdfFile = uploadedFile, pageNums = [lower_bound, upper_bound]) , deckName = deckName)
+            with open(exportedCards, 'rb') as ankiFile:
                 st.text('')
-             
-    except: 
-         st.text('Encountered an error')
+                st.text('')
+                st.download_button(
+                label='Download Cards (PDF -> Anki)',
+                data= ankiFile,
+                file_name= exportedCards,
+                mime='text/csv')
 
+        except Exception as e: 
+            st.text(e)
+
+
+
+    if test_text != '' and deckName != '':
+        try: 
+            exportedCards = createFlashCards(article = test_text, deckName = deckName)
+
+            with open(exportedCards, 'rb') as ankiFile:
+                st.text('')
+                st.text('')
+                st.text('')
+
+                st.markdown('**Converting Uploaded to Cards! This may take a few minutes.**')
+                st.text("Note: no cards may be generated if small text size");
+                st.text('')
+                st.text('')
+                st.download_button(
+                label='Download Cards',
+                data= ankiFile,
+                file_name= exportedCards,
+                mime='text/csv')
+
+        except Exception as e:
+            st.text(e)
+     
     
+except Exception as exc: 
+    st.markdown("**The App Encountered An Error. Please Try Again.**")
 
