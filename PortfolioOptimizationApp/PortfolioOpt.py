@@ -315,8 +315,9 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
             elif choice == opt_list[2]:
                 try:
                     MCV(portfolio)
-                except: 
-                    st.text('Error Occured - Please try again')
+                except Exception as e_: 
+                    st.text(e_)
+                    #st.text('Error Occured - Please try again')
     except Exception as e : 
             st.text(e)
       
