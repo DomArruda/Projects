@@ -189,7 +189,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
     discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
     end_value_DA = sum(discrete_end_values.values())
     percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
-    st.text()
+    st.text('')
     st.text('')
     st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
     st.text('')
@@ -385,10 +385,10 @@ if ("" not in selected_stocks)  and (start_date != False) and (end_date != False
             elif choice == opt_list[2]:
                 try:
                     MCV(portfolio)
-                except Exception as e_: 
+                except Exception as e_1: 
                     st.text(e_)
                     #st.text('Error Occured - Please try again')
-    except Exception as e : 
+    except Exception as e_2 : 
             st.text(e)
       
 else: 
