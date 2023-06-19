@@ -181,7 +181,16 @@ def HRP(portfolio, port_value, future_portfolio = None):
   st.write("\nFunds remaining (HRP): ${:.2f}".format(leftover))
     
   st.text('\n\n')
-  st.markdown("**Non-Discrete Allocation**") 
+if future_portfolio is not None: 
+    discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
+    initial_value_DA = sum(discrete_purchases.values())
+    discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
+    end_value_DA = sum(discrete_end_values.values())
+    percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
+    st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
+    st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
+
+st.markdown("\n\n**Non-Discrete Allocation**") 
  
 
 
@@ -196,14 +205,19 @@ def HRP(portfolio, port_value, future_portfolio = None):
     
   st.dataframe(ND_weights)
 
-  if future_portfolio is not None: 
-    discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
-    initial_value_DA = sum(discrete_purchases.values())
-    discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
-    end_value_DA = sum(discrete_end_values.values())
-    percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
-    st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
-    st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
+
+  if (future_portfolio is not None):
+
+    initialInvestments = { stock_names: proportions * port_value for stock_names, proportions in  hrp_weights.items()}
+    end_port_value = sum([   (future_portfolio[stock_names].iloc[-1]/portfolio[stock_names].iloc[-1])*  initialInvestments[stock_names] for  stock_names in hrp_weights.keys() ])
+    percent_change =  ((end_port_value - port_value)/port_value) * 100
+    st.markdown(f'\n\n**Portfolio By End of Test Date: ${end_port_value:.0f}**')
+    st.markdown(f'\n**Percent Change: {percent_change:.2f}%**')
+
+
+      
+
+
 
 
 
