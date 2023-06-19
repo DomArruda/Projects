@@ -190,9 +190,8 @@ def HRP(portfolio, port_value, future_portfolio = None):
 
 
 
-  hrp_weights_temp =   pd.DataFrame().append(dict(hrp_weights), ignore_index = True).T.reset_index()
-  hrp_weights_temp.columns = ['Ticker', 'Percent Allocation']
-  ND_weights = hrp_weights_temp.copy()
+  hrp_weights_df = pd.DataFrame(tuple(hrp_weights.items()), columns = ['Ticker', 'Percent Allocation'])
+  ND_weights = hrp_weights_df.copy()
   ND_weights_og = dict(ND_weights)
   ND_weights['Latest Prices'] = list(latest_prices) 
   ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
