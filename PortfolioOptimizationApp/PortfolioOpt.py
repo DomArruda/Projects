@@ -190,13 +190,10 @@ def HRP(portfolio, port_value, future_portfolio = None):
     end_value_DA = sum(discrete_end_values.values())
     percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
     st.text('')
-    st.text('')
+    st.header("Discrete Allocation Backtest")
     st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
-    st.text('')
     st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
     
-  st.text('')
-  st.text('')
   st.text('')
   st.markdown("\n\n**Non-Discrete Allocation**") 
 
@@ -219,7 +216,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
     initialInvestments = { stock_names: proportions * port_value for stock_names, proportions in  hrp_weights.items()}
     end_port_value = sum([   (future_portfolio[stock_names].iloc[-1]/portfolio[stock_names].iloc[-1])*  initialInvestments[stock_names] for  stock_names in hrp_weights.keys() ])
     percent_change =  ((end_port_value - port_value)/port_value) * 100
-    st.text('')
+    st.header("Non-Discrete Allocation Backtest")
     st.text('')
     st.markdown(f'\n\n**Portfolio By End of Test Date: ${end_port_value:.0f}**')
     st.markdown(f'\n**Percent Change: {percent_change:.2f}%**')
