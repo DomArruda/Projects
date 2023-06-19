@@ -183,6 +183,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
   st.text('\n\n')
   st.text('')
   st.text('')
+  st.text('')
   if future_portfolio is not None: 
     discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
     initial_value_DA = sum(discrete_purchases.values())
@@ -195,7 +196,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
     st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
     
   st.text('')
-  st.markdown("\n\n**Non-Discrete Allocation**") 
+  st.header("Non-Discrete Allocation") 
 
 
 
@@ -209,6 +210,8 @@ def HRP(portfolio, port_value, future_portfolio = None):
   ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
     
   st.dataframe(ND_weights)
+  st.text('')
+  st.text('')
 
 
   if (future_portfolio is not None):
@@ -220,19 +223,10 @@ def HRP(portfolio, port_value, future_portfolio = None):
     st.text('')
     st.markdown(f'\n\n**Portfolio By End of Test Date: ${end_port_value:.0f}**')
     st.markdown(f'\n**Percent Change: {percent_change:.2f}%**')
+    st.text('')
 
 
-      
-
-
-
-
-
-
-    
-           
-             
-
+     
 
 
 #Mean Conditional Value at Risk
