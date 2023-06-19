@@ -291,9 +291,10 @@ selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, defau
 
 start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365 + 1)).strftime('%m/%d/%Y'))
 end_date = st.text_input('Write your stock end date in month/day/year format', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
-backtest_date = st.text_input('Write a backtest date (after end date) in month/day/year format (OPTIONAL)', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y')
-if backtest_date == '': 
-   backtest_date = None
+backtest_date = st.text_input('Write a backtest date (after end date) in month/day/year format (OPTIONAL)', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
+                        
+if (backtest_date == False) or (backtest_date == ''): 
+    backtest_date = None 
 
 
 
