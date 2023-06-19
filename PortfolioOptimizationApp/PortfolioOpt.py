@@ -359,7 +359,8 @@ if ("" not in selected_stocks)  and (start_date != False) and (end_date != False
             if choice == opt_list[1]: 
                 try:
                     HRP(portfolio, port_value, future_portfolio)
-                except: 
+                except Exception as e: 
+                    st.text(e)
                     st.text('Error Occured: Please try again')
             elif choice == opt_list[2]:
                 try:
