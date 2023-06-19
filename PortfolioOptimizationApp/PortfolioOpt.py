@@ -153,7 +153,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
 
   hrp.portfolio_performance(verbose=True)
   st.text('')
-  st.markdown('**Portfolio Performance**')
+  st.header('Expected Portfolio Performance')
   st.write('Expected Annual Return (Discrete Allocation):           ',str(round(hrp.portfolio_performance()[0] * 100, 3)) + '%')
   st.write('Annual Volatility:           ',str(round(hrp.portfolio_performance()[1] * 100, 3)) + '%')
   st.write('Sharpe Ratio:           ',str(round(hrp.portfolio_performance()[2], 3)))
@@ -173,7 +173,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
   print("\nFunds remaining (HRP): ${:.2f}".format(leftover))
 
 
-  st.markdown("**Discrete stock allocation:**")
+  st.header("Discrete stock allocation:")
   st.text('')
   allocation.sort_values(by = ['Number of Stocks'], inplace = True)
   st.dataframe(allocation)
@@ -182,8 +182,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
     
   st.text('\n\n')
   st.text('')
-  st.text('')
-  st.text('')
+
   if future_portfolio is not None: 
     discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
     initial_value_DA = sum(discrete_purchases.values())
@@ -195,6 +194,9 @@ def HRP(portfolio, port_value, future_portfolio = None):
     st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
     st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
     
+  st.text('')
+  st.text('')
+  st.text('')
   st.text('')
   st.header("Non-Discrete Allocation") 
 
