@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 12 09:29:19 2023
-@author: darruda
-"""
-
-
 
 import pandas as pd
 import yfinance as yf
@@ -185,7 +179,8 @@ def HRP(portfolio, port_value, future_portfolio = None):
   st.dataframe(allocation)
   st.text('')
   st.write("\nFunds remaining (HRP): ${:.2f}".format(leftover))
-
+    
+  st.text('\n\n')
   st.markdown("**Non-Discrete Allocation**") 
  
 
@@ -207,8 +202,8 @@ def HRP(portfolio, port_value, future_portfolio = None):
     discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
     end_value_DA = sum(discrete_end_values.values())
     percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
-    print(f'\n\nPortfolio By End of Test Date (DA): ${end_value_DA:.0f}')
-    print(f'\nPercent Change: (DA) {percent_change_DA:.2f}%')
+    st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
+    st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
 
 
 
