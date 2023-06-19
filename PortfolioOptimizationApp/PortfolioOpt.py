@@ -382,7 +382,7 @@ if ("" not in selected_stocks)  and (start_date != False) and (end_date != False
                     st.text(e_)
                     #st.text('Error Occured - Please try again')
     except Exception as e_2 : 
-            st.text(e)
+            st.text(e_2)
       
 else: 
     st.stop()
