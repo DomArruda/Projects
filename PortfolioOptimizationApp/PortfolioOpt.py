@@ -291,16 +291,16 @@ selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, defau
 
 start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365 + 1)).strftime('%m/%d/%Y'))
 end_date = st.text_input('Write your stock end date in month/day/year format', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
-backtest_date = st.text_input('Write a backtest date (after end date) in month/day/year format (OPTIONAL)', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
+future_date = st.text_input('Write a backtest date (after end date) in month/day/year format (OPTIONAL)', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
                         
-if (backtest_date == False) or (backtest_date == ''): 
-    backtest_date = None 
 
 
-
-if "" not in selected_stocks  and start_date != False and end_date != False:
+if ("" not in selected_stocks)  and (start_date != False) and (end_date != False):
     try:
         future_portfolio = None
+        if (future_date == False) or (future_date == '') or (end_date == future_date): 
+            future_date = None 
+
         portfolio = create_portfolio(selected_stocks, start_date, end_date, future_date)
         if len(portfolio) == 2 and not isinstance(portfolio, pd.DataFrame):
             portfolio, future_portfolio = portfolio 
