@@ -38,31 +38,63 @@ from datetime import date
 from datetime import timedelta
 
 
-
-def create_portfolio(tick_list, start_date, end_date): 
+def create_portfolio(tick_list, start_date, end_date, future_date = None): 
   if '-' in start_date: 
     start_date.replace('-', '/')
   if '-' in end_date: 
     end_date.replace('-', '/')
+  if future_date != None:
+    future_date.replace('-', '/')
+    future_date = datetime.strptime(future_date, '%m/%d/%Y') 
+
   start_date = datetime.strptime(start_date, '%m/%d/%Y')
   end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
+
+
+
   df_list = []
-  for i in tick_list: 
-    stock = yf.download(i, start = start_date, end = end_date, progress = False)
-    if len(stock) == 0: 
-      continue 
 
-    else: 
-      stock.rename( columns = {'Close': i}, inplace= True)
-      stock = stock[i]
-      df_list.append(stock)
+  if future_date != None:
+    for i in tick_list: 
+      stock = yf.download(i, start = start_date, end = future_date, progress = False)
+      if len(stock) == 0: 
+        continue 
 
+      else: 
+        stock.rename( columns = {'Close': i}, inplace= True)
+        stock = stock[i]
+        df_list.append(stock)
 
-  portfolio_list = pd.concat(df_list, axis = 1)
-  portfolio_list.dropna(inplace= True)
-  return portfolio_list
+    portfolio_list = pd.concat(df_list, axis = 1)
+    portfolio_list.dropna(inplace= True)
+    portfolio = portfolio_list
 
+    og_portfolio = portfolio
+    portfolio = og_portfolio[og_portfolio.index <= end_date]
+    portfolio_end = og_portfolio[og_portfolio.index >= end_date]
+
+    return (portfolio, portfolio_end)
+
+  else:
+    for i in tick_list: 
+      stock = yf.download(i, start = start_date, end = end_date, progress = False)
+      if len(stock) == 0: 
+        continue 
+
+      else: 
+        stock.rename( columns = {'Close': i}, inplace= True)
+        stock = stock[i]
+        df_list.append(stock)
+
+      
+
+    portfolio_list = pd.concat(df_list, axis = 1)
+    print(portfolio_list)
+    portfolio_list.dropna(inplace= True)
+    portfolio = portfolio_list
+
+    return portfolio
 
 
 
@@ -117,51 +149,69 @@ def MVO_opt(portfolio):
 # %%
 
 #Hierarchal Risk Parity:
-def HRP(portfolio):
-    mu = mean_historical_return(portfolio)
-    S = CovarianceShrinkage(portfolio).ledoit_wolf()
-    returns = portfolio.pct_change().dropna()
-    
-    hrp = HRPOpt(returns)
-    hrp_weights = hrp.optimize()
-    
-    hrp.portfolio_performance(verbose=True)
-    st.text('')
-    st.markdown('**Portfolio Performance**')
-    st.write('Expected Annual Return (Discrete Allocation):           ',str(round(hrp.portfolio_performance()[0] * 100, 3)) + '%')
-    st.write('Annual Volatility:           ',str(round(hrp.portfolio_performance()[1] * 100, 3)) + '%')
-    st.write('Sharpe Ratio:           ',str(round(hrp.portfolio_performance()[2], 3)))
-    st.text('')
-    st.text('')
-    
-    latest_prices = get_latest_prices(portfolio)
-    da_hrp = DiscreteAllocation(hrp_weights, latest_prices, total_portfolio_value= port_value)
-    allocation, leftover = da_hrp.greedy_portfolio()
-    allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
-    allocation.columns = ['Ticker', 'Number of Stocks']
-    print("Discrete allocation (HRP):", allocation)
-    print("Funds remaining (HRP): ${:.2f}".format(leftover))
-    
-    
-    
-    st.markdown("**Discrete stock allocation:**")
-    st.text('')
-    allocation.sort_values(by = ['Number of Stocks'], inplace = True)
-    st.dataframe(allocation)
-    st.text('')
-    st.write("Funds remaining (HRP): ${:.2f}".format(leftover))
-    
-    st.markdown("**Non-Discrete Allocation**") 
-    hrp_weights_temp =   pd.DataFrame().append(dict(hrp_weights), ignore_index = True).T.reset_index()
-    hrp_weights_temp.columns = ['Ticker', 'Percent Allocation']
-    ND_weights = hrp_weights_temp.copy()
-    ND_weights['Latest Prices'] = list(latest_prices) 
-    ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
-    ND_weights.drop(['Percent Allocation', 'Latest Prices'] , axis = 1, inplace = True)
-    ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
-    
-    st.dataframe(ND_weights)
-   
+def HRP(portfolio, port_value, future_portfolio = None):
+  mu = mean_historical_return(portfolio)
+  S = CovarianceShrinkage(portfolio).ledoit_wolf()
+  returns = portfolio.pct_change().dropna()
+
+  hrp = HRPOpt(returns)
+  hrp_weights = hrp.optimize()
+
+  hrp.portfolio_performance(verbose=True)
+  st.text('')
+  st.markdown('**Portfolio Performance**')
+  st.write('Expected Annual Return (Discrete Allocation):           ',str(round(hrp.portfolio_performance()[0] * 100, 3)) + '%')
+  st.write('Annual Volatility:           ',str(round(hrp.portfolio_performance()[1] * 100, 3)) + '%')
+  st.write('Sharpe Ratio:           ',str(round(hrp.portfolio_performance()[2], 3)))
+  st.text('')
+  st.text('')
+
+
+
+
+  latest_prices = get_latest_prices(portfolio)
+  da_hrp = DiscreteAllocation(hrp_weights, latest_prices, total_portfolio_value= port_value)
+  allocation, leftover = da_hrp.greedy_portfolio()
+  allocation_dict = allocation
+  allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
+  allocation.columns = ['Ticker', 'Number of Stocks']
+  print("\nDiscrete allocation (HRP):", allocation)
+  print("\nFunds remaining (HRP): ${:.2f}".format(leftover))
+
+
+  st.markdown("**Discrete stock allocation:**")
+  st.text('')
+  allocation.sort_values(by = ['Number of Stocks'], inplace = True)
+  st.dataframe(allocation)
+  st.text('')
+  st.write("\nFunds remaining (HRP): ${:.2f}".format(leftover))
+
+  st.markdown("**Non-Discrete Allocation**") 
+
+
+
+  hrp_weights_temp =   pd.DataFrame().append(dict(hrp_weights), ignore_index = True).T.reset_index()
+  hrp_weights_temp.columns = ['Ticker', 'Percent Allocation']
+  ND_weights = hrp_weights_temp.copy()
+  ND_weights_og = dict(ND_weights)
+  ND_weights['Latest Prices'] = list(latest_prices) 
+  ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
+  ND_weights.drop(['Percent Allocation', 'Latest Prices'] , axis = 1, inplace = True)
+  ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
+
+  if future_portfolio is not None: 
+    discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
+    initial_value_DA = sum(discrete_purchases.values())
+    discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
+    end_value_DA = sum(discrete_end_values.values())
+    percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
+    print(f'\n\nPortfolio By End of Test Date (DA): ${end_value_DA:.0f}')
+    print(f'\nPercent Change: (DA) {percent_change_DA:.2f}%')
+
+
+
+  print('\n\n\nNon-Discrete Allocation:\n')
+  print(ND_weights)
     
            
              
@@ -241,12 +291,18 @@ selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, defau
 
 start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365 + 1)).strftime('%m/%d/%Y'))
 end_date = st.text_input('Write your stock end date in month/day/year format', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
+backtest_date = st.text_input('Write a backtest date (after end date) in month/day/year format (OPTIONAL)', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y')
+if backtest_date == '': 
+   backtest_date = None
 
 
 
 if "" not in selected_stocks  and start_date != False and end_date != False:
     try:
-        portfolio = create_portfolio(selected_stocks, start_date, end_date)
+        future_portfolio = None
+        portfolio = create_portfolio(selected_stocks, start_date, end_date, future_date)
+        if len(portfolio) == 2 and not isinstance(portfolio, pd.DataFrame):
+            portfolio, future_portfolio = portfolio 
         
         #st.write(type(portfolio))
         if portfolio is None:
@@ -287,15 +343,7 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
             st.plotly_chart(fig)
             
             
-        
-        
-
-        
-        
-        
-        
-        
-        
+       
         
         
         port_value = st.text_input('What amount do you plan on investing in your portfolio?')
@@ -309,7 +357,7 @@ if "" not in selected_stocks  and start_date != False and end_date != False:
             #'Mean Variance Optimization' - Need to fix this one up...
             if choice == opt_list[1]: 
                 try:
-                    HRP(portfolio)
+                    HRP(portfolio, port_value, future_portfolio)
                 except: 
                     st.text('Error Occured: Please try again')
             elif choice == opt_list[2]:
