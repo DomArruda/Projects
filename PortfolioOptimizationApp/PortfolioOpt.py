@@ -181,7 +181,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
   st.write("\nFunds remaining (HRP): ${:.2f}".format(leftover))
     
   st.text('\n\n')
-if future_portfolio is not None: 
+  if future_portfolio is not None: 
     discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
     initial_value_DA = sum(discrete_purchases.values())
     discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
@@ -190,8 +190,8 @@ if future_portfolio is not None:
     st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
     st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
 
-st.markdown("\n\n**Non-Discrete Allocation**") 
- 
+  st.markdown("\n\n**Non-Discrete Allocation**") 
+
 
 
 
