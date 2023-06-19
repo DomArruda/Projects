@@ -187,6 +187,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
   st.write("\nFunds remaining (HRP): ${:.2f}".format(leftover))
 
   st.markdown("**Non-Discrete Allocation**") 
+ 
 
 
 
@@ -197,6 +198,8 @@ def HRP(portfolio, port_value, future_portfolio = None):
   ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
   ND_weights.drop(['Percent Allocation', 'Latest Prices'] , axis = 1, inplace = True)
   ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
+    
+  st.dataframe(ND_weights)
 
   if future_portfolio is not None: 
     discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
@@ -209,8 +212,7 @@ def HRP(portfolio, port_value, future_portfolio = None):
 
 
 
-  print('\n\n\nNon-Discrete Allocation:\n')
-  print(ND_weights)
+
     
            
              
