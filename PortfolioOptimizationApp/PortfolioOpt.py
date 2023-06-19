@@ -190,9 +190,9 @@ def HRP(portfolio, port_value, future_portfolio = None):
     end_value_DA = sum(discrete_end_values.values())
     percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
     st.text()
-    st.text()
+    st.text('')
     st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
-    st.text()
+    st.text('')
     st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
     
   st.text('')
