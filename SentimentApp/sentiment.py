@@ -64,7 +64,6 @@ def reviews_csv(reviews):
     data_columns = data.columns 
     data_columns = data_columns.insert(0, 'None Selected')
     additional_instructs = ''
-    st.text(downloaded_mock)
     if downloaded_mock != False: 
         additional_instructs = 'Use reviews.text for Mock Data.' 
         
@@ -130,7 +129,8 @@ st.header('Please Upload A CSV, Website Link, Or Connect To SQL')
 try:
      mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
      data_csv = mock_data.to_csv(index = False).encode('utf-8')
-     downloaded_mock = st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+     st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+     downloaded_mock = True
 except: 
      st.text('')
         
