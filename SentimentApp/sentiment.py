@@ -67,7 +67,7 @@ def reviews_csv(reviews):
     if downloaded_mock != False: 
         additional_instructs = 'Use reviews.text for Mock Data.' 
         
-    selected_column = st.selectbox(f'Which column contains the reviews?{additional_instructs}', data_columns)
+    selected_column = st.selectbox(f'Which column contains the reviews? {additional_instructs}', data_columns)
     totalReviews = len(data)
     st.text(f'Total number of reviews detected: {totalReviews}')
     numReviews = int(st.number_input('How many reviews should I analyze? '))
