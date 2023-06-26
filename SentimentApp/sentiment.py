@@ -12,6 +12,7 @@ from PIL import Image
 import csv
 import plotly.express as px
 import pyodbc
+downloaded_mock = False
 #%%
 
 @st.cache(allow_output_mutation = True)
@@ -62,7 +63,11 @@ def reviews_csv(reviews):
     data = pd.read_csv(reviews, header = "infer")
     data_columns = data.columns 
     data_columns = data_columns.insert(0, 'None Selected')
-    selected_column = st.selectbox('Which column contains the reviews?', data_columns)
+    additional_instructs = ''
+    if downloaded_mock != False: 
+        additional_instructs = 'Use reviews.text for Mock Data.' 
+        
+    selected_column = st.selectbox(f'Which column contains the reviews?{additional_instructs}', data_columns)
     totalReviews = len(data)
     st.text(f'Total number of reviews detected: {totalReviews}')
     numReviews = int(st.number_input('How many reviews should I analyze? '))
@@ -124,7 +129,7 @@ st.header('Please Upload A CSV, Website Link, Or Connect To SQL')
 try:
      mock_data = pd.read_csv('SentimentApp/AmazonProductReviews.csv')
      data_csv = mock_data.to_csv(index = False).encode('utf-8')
-     st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
+     downloaded_mock = st.download_button("Don't have any test data? Click here to download sample product review data!", data_csv, 'AmazonReviews.csv')
 except: 
      st.text('')
         
