@@ -64,6 +64,7 @@ def reviews_csv(reviews):
     data_columns = data.columns 
     data_columns = data_columns.insert(0, 'None Selected')
     additional_instructs = ''
+    st.text(downloaded_mock)
     if downloaded_mock != False: 
         additional_instructs = 'Use reviews.text for Mock Data.' 
         
