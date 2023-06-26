@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  3 10:04:12 2023
 
-@author: darruda
-"""
 import streamlit as st 
 from bs4 import BeautifulSoup
 import numpy as np
