@@ -3,7 +3,7 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import numpy as np
 import re
-import pandas as pd
+import pandas as pd 
 import requests
 import numpy 
 import torch, torchvision
