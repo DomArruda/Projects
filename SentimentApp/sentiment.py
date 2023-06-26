@@ -157,7 +157,7 @@ if uploaded_link == '' and uploaded_file is not None:
     
     st.plotly_chart(fig)
     review_csv = review_df.to_csv(index = False).encode('utf-8')
-    st.download_button('Click below to download your sentiment report: ', 
+    download = st.download_button('Click below to download your sentiment report: ', 
                        review_csv, 'sentiment.csv')
     
     
