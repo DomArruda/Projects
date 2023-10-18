@@ -29,7 +29,6 @@ try:
 
     if button_bool: 
         df = query_database(engine = engine, query = "SELECT * FROM SALES LIMIT 5")
-        st.markdown("*Query: SELECT * FROM SALES LIMIT 5*")
         st.dataframe(df)
         button_bool = False
         st.markdown(f'*Number of rows:         {df.shape[0]:,}*')
