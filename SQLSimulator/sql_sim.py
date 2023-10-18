@@ -22,9 +22,10 @@ try:
 
     def query_database(engine, query):
         conn = engine.connect()
-        execution_result = conn.execute(query)
-        df = pd.DataFrame(execution_result.fetchall())
-        df.columns = execution_result.keys()
+        df = pd.read_sql(query, conn)
+        #execution_result = conn.execute(query)
+        #df = pd.DataFrame(execution_result.fetchall())
+        #df.columns = execution_result.keys()
         return df
 
     if button_bool: 
