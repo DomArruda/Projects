@@ -15,7 +15,7 @@ try:
         return data
 
     data = read_data()
-    engine = create_engine('sqlite://', echo=False)
+    engine = create_engine('sqlite://memory', echo=False)
     data.to_sql(name = 'Sales', con = engine, index = False)
 
     button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
