@@ -9,7 +9,7 @@ try:
     st.text('')
     @st.cache
     def read_data():
-        data = pd.read_csv(r"https://github.com/DomArruda/Projects/blob/main/SQLSimulator/SaleTransactions.csv")
+        data = pd.read_csv(r"https://github.com/DomArruda/Projects/blob/main/SQLSimulator/SaleTransactions.csv", delimiter = ',')
         if 'index' in list(data.columns):
             data = data.drop('index', axis = 1)
         return data
@@ -50,7 +50,7 @@ try:
 except Exception as e:
     st.text('')
     st.text('')
-    st.markdown('# Looks like the website/app may be down! Hang tight! #')
+    st.markdown('# Looks like the website/app may be down! Hang tight!')
     st.text(e)
 
 
