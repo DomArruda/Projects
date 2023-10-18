@@ -9,7 +9,7 @@ try:
     st.text('')
     @st.cache
     def read_data():
-        data = pd.read_csv(r"https://github.com/DomArruda/Projects/blob/main/SQLSimulator/SaleTransactions.csv", delimiter = ',')
+        data = pd.read_csv(r"SQLSimulator/SaleTransactions.csv", delimiter = ',')
         if 'index' in list(data.columns):
             data = data.drop('index', axis = 1)
         return data
