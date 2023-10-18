@@ -48,10 +48,11 @@ try:
             st.markdown(f'*Number of cols:         {df.shape[1]:,}*')
         except: 
             st.markdown("Oops! Looks like we've encountered an error. Try checking your query")
-except:
+except Exception as e:
     st.text('')
     st.text('')
     st.markdown('#Looks like the website/app may be down! Hang tight!#')
+    st.text(e)
 
 
 
