@@ -50,7 +50,7 @@ try:
 except Exception as e:
     st.text('')
     st.text('')
-    st.markdown('#Looks like the website/app may be down! Hang tight!#')
+    st.markdown('# Looks like the website/app may be down! Hang tight! #')
     st.text(e)
 
 
