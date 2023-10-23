@@ -3,15 +3,15 @@ import streamlit as st
 from sqlalchemy import create_engine
 from pyspark.sql import SparkSession
 from PIL import Image
-image = Image.open(r"C:\Users\darruda\Downloads\database_schema.png")
+image = Image.open("SQLSimulator/database_schema.png")
 spark = SparkSession.builder.appName("SQL_Sim").getOrCreate()
 st.title("SQL SIMULATOR ⚙️")
 st.image(image, caption = '', use_column_width = True)
 
 def read_data():
-    df1 = spark.read.csv(r"C:\Users\darruda\Downloads\Salespeople.csv", header=True, inferSchema=True)
-    df2 = spark.read.csv(r"C:\Users\darruda\Downloads\Salespeople_Data.csv", header=True, inferSchema=True)
-    df3 = spark.read.csv(r"C:\Users\darruda\Downloads\Transactions.csv", header=True, inferSchema=True)
+    df1 = spark.read.csv(r"SQLSimualtor/Salespeople.csv", header=True, inferSchema=True)
+    df2 = spark.read.csv(r"SQLSimulator/Salespeople_Data.csv", header=True, inferSchema=True)
+    df3 = spark.read.csv(r"SQLSimulator/Transactions.csv", header=True, inferSchema=True)
     return df1, df2, df3
 
 salespeople, sales, transactions= read_data()
