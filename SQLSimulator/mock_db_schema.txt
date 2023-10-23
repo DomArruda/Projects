@@ -1,0 +1,31 @@
+
+
+Table Sales {
+  Transaction_ID integer 
+  Transaction_Type_ID integer 
+  Transaction_Date timestamp
+  Company_Name varchar
+  Revenue float
+  Salesperson_Name varchar
+  Salesperson_Email varchar 
+  Cancelled varchar 
+  Transaction_Office varchar
+}
+
+Table Salespeople {
+  Email varchar [primary key]
+  Active integer
+}
+
+Table Transactions {
+  Type_ID integer [primary key]
+  Transaction_Type_Name varchar
+}
+
+
+
+
+
+Ref: "Salespeople"."Email" < "Sales"."Salesperson_Email"
+
+Ref: "Transactions"."Type_ID" < "Sales"."Transaction_Type_ID"
