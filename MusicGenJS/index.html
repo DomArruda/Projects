@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Music Gen 🎧🎶</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <style>
         body {
@@ -22,31 +23,37 @@
     </style>
 </head>
 <body>
-    <div class="container my-5">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="mb-0">Music Gen JS 🎧🎶</h2>
-            </div>
-            <div class="card-body">
-                <form id="ml-form">
-                    <div class="form-group">
-                        <strong><label for="user-input">Please provide a description of the song you would like to generate (Ex: LoFi Beats In The Style Of Queen)</label></strong>
-                        <input type="text" id="user-input" class="form-control">
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">Music Gen JS 🎧🎶</h2>
                     </div>
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                    <br>
-                    <br>
-                    <div id="spinner" style="display: none;">
-                        <div class="spinner-border" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
+                    <div class="card-body">
+                        <form id="ml-form">
+                            <div class="form-group">
+                                <strong><label for="user-input">Please provide a description of the song you would like to generate (Ex: LoFi Beats In The Style Of Queen)</label></strong>
+                                <input type="text" id="user-input" class="form-control">
+                            </div>
+                            <br>
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                            <br>
+                            <br>
+                            <div id="spinner" style="display: none;">
+                                <div class="spinner-border" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="result"></div>
+                        <audio id="audio-player" controls style="display: none;"></audio>
+                        <br>
+                        <br>
+                        <a id="download-link" href="#" download="generated_music.wav" style="display: none;">Download</a>
+                        <br>
                     </div>
-                </form>
-                <div id="result"></div>
-                <br>
-                <audio id="audio-player" controls style="display: none;"></audio>
-                <a id="download-link" href="#" download="generated_music.wav" style="display: none;">Download</a>
-                <br>
+                </div>
             </div>
         </div>
     </div>
