@@ -1,3 +1,9 @@
 A small web app that uses Huggingface's API to generate music based on user request. 
 
 This is meant as a project to better my Javascript/Front-end skills. I "cheated" and used a LLM a little :)
+
+
+FEATURES TO ADD: 
+
+- Rating System
+- Download Link
