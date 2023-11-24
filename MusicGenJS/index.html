@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Music Gen 🎧🎶</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #121212;
+            color: #fff;
+        }
+        .card {
+            background-color: #333;
+            border-color: #444;
+        }
+        .btn-primary {
+            background-color: #1db954;
+            border-color: #1db954;
+        }
+        .spinner-border {
+            color: #1db954;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">Music Gen JS 🎧🎶</h2>
+            </div>
+            <div class="card-body">
+                <form id="ml-form">
+                    <div class="form-group">
+                        <strong><label for="user-input">Please provide a description of the song you would like to generate (Ex: LoFi Beats In The Style Of Queen)</label></strong>
+                        <input type="text" id="user-input" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <br>
+                    <br>
+                    <div id="spinner" style="display: none;">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </form>
+                <div id="result"></div>
+                <br>
+                <audio id="audio-player" controls style="display: none;"></audio>
+                <a id="download-link" href="#" download="generated_music.wav" style="display: none;">Download</a>
+                <br>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="music_app.js"></script>
+</body>
+</html>
