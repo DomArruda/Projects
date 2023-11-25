@@ -20,6 +20,33 @@
         .spinner-border {
             color: #1db954;
         }
+
+        .review-text{
+            display: none;
+            justify-content: flex-start;
+        }
+
+        .ratings-wrapper{
+        border: thin solid #999;
+        display: none;
+        margin-bottom: 20px;
+        }
+        .ratings{
+        display: none;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        }
+        .ratings span{
+        cursor: pointer;
+        transition: color .2s;
+        font-size: 50px;
+        }
+        .ratings span:hover,
+        .ratings span:hover ~ span,
+        .ratings span[data-clicked],
+        .ratings span[data-clicked] ~ span{
+        color: orange;
+        }  
     </style>
 </head>
 <body>
@@ -33,10 +60,12 @@
                     <div class="card-body">
                         <form id="ml-form">
                             <div class="form-group">
-                                <strong><label for="user-input">Please provide a description of the song you would like to generate (Ex: LoFi Beats In The Style Of Queen)</label></strong>
+                                <strong><label for="user-input">Please provide a description of the song you would like to generate (Ex: Lofi Beats In the Style of Queen)</label></strong>
+                                <em><p style="font-size: 10px; margin-top: 0;">Please use Google Chrome if on mobile</p></em>
+
                                 <input type="text" id="user-input" class="form-control">
                             </div>
-                
+                            <br>
                             <button type="submit" class="btn btn-primary">Submit</button>
                             <br>
                             <br>
@@ -47,12 +76,17 @@
                             </div>
                         </form>
                         <div id="result"></div>
-                        <br>
                         <audio id="audio-player" controls style="display: none;"></audio>
                         <br>
-                        <br>
                         <a id="download-link" href="#" download="generated_music.wav" style="display: none;">Download</a>
-                        <br>
+                    </div>
+                    <h5  class="review-text">Please rate the song 😄</h5>
+                    <div class="ratings">
+                        <span data-rating="5">★</span>
+                        <span data-rating="4">★</span>
+                        <span data-rating="3">★</span>
+                        <span data-rating="2">★</span>
+                        <span data-rating="1">★</span>
                     </div>
                 </div>
             </div>
