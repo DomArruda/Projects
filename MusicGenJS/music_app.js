@@ -13,12 +13,16 @@ async function query(data) {
 
 document.getElementById('ml-form').addEventListener('submit', async function(e) {
     e.preventDefault();
+    // Display the spinner
+    document.getElementById('spinner').style.display = 'block';
     let input = document.getElementById('user-input').value;
     let response = await query({"inputs": input});
     let url = URL.createObjectURL(response);
     let audioPlayer = document.getElementById('audio-player');
     audioPlayer.src = url;
     audioPlayer.style.display = 'block';
+    // Hide the spinner
+    document.getElementById('spinner').style.display = 'none';
     // Display the star rating section and review text
     document.querySelector('.ratings').style.display = 'flex';
     document.querySelector('.review-text').style.display = 'block';
