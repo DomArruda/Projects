@@ -26,6 +26,10 @@ document.getElementById('ml-form').addEventListener('submit', async function(e) 
     // Display the star rating section and review text
     document.querySelector('.ratings').style.display = 'flex';
     document.querySelector('.review-text').style.display = 'block';
+    let brElements = document.querySelectorAll('.hidden-br');
+    for(let br of brElements){
+        br.style.display = 'block';
+    }
 });
 
 let stars = document.querySelectorAll(".ratings span");
