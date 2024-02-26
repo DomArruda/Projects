@@ -48,7 +48,7 @@ if button_bool:
 
 
 # User Input
-query = st.text_area(label = "Write your SQL Query here")
+query = st.text_area(label = "Write your SQL Query here").lower()
 
 if str(query) != '':
     try:
