@@ -52,10 +52,9 @@ if button_bool:
 # User Input
 
 # there's better ways to do this but oh well. 
-def CreateQuery():
     st.markdown("*Write Your SQL Code Below. Press ctrl + enter to run the query.*")
     query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", key="editor", height = 500, theme= "light", id= id)
-    
+
     if str(query['text']) != '':
         try:
             for query in query['text'].split(";"):
@@ -68,5 +67,4 @@ def CreateQuery():
             st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
 
 
-if __name__ == "main":
-    CreateQuery()
+
