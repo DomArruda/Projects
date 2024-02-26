@@ -35,7 +35,7 @@ def query_database(query):
     return df
 
 
-button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
+button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS".lower())
 
 if button_bool:
     df = query_database(query = "SELECT * FROM SALES LIMIT 5")
