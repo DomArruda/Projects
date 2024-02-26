@@ -64,8 +64,8 @@ def CreateQuery():
                 st.dataframe(df, use_container_width = False)
                 st.markdown(f'*Number of rows:{df.shape[0]:,}*')
                 st.markdown(f'*Number of cols:{df.shape[1]:,}*')
-            except Exception as e:
-                st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
+        except Exception as e:
+            st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
 
 
 if __name__ == "main":
