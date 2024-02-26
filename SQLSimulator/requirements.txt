@@ -1,6 +1,6 @@
 pandas
 numpy
 SQLAlchemy==1.4.0
-streamlit_code_editor
+streamlit-code-editor==0.1.10
 duckdb
 
