@@ -58,11 +58,12 @@ query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", ke
 
 if str(query['text']) != '':
     try:
-        st.text('')
-        df = query_database(query = query['text'].lower())
-        st.dataframe(df, use_container_width = False)
-        st.markdown(f'*Number of rows:{df.shape[0]:,}*')
-        st.markdown(f'*Number of cols:{df.shape[1]:,}*')
+        for query in query['text'].split(';'):
+            st.text('')
+            df = query_database(query = query['text'].lower())
+            st.dataframe(df, use_container_width = False)
+            st.markdown(f'*Number of rows:{df.shape[0]:,}*')
+            st.markdown(f'*Number of cols:{df.shape[1]:,}*')
     except Exception as e:
         st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
 
