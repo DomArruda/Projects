@@ -71,7 +71,7 @@ if (str(query['text']).strip(" ") != ''):
             st.dataframe(df, use_container_width = False)
            
     except Exception as e:
-        if "no open result set" in e.lower():
+        if "no open result set" in str(e).lower():
             print(e)
         else:
             st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
