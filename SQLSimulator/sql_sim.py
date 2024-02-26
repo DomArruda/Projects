@@ -61,7 +61,7 @@ if button_bool:
 st.markdown("*Write Your SQL Code Below. Press ctrl + enter to run the query.*")
 query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", key="editor", height = 500, theme= "light")
 
-if str(query['text']).strip(" ") != '' and str(query['text']).strip(" ").replace('\n,"") != "/*Write your code here!*/"  :
+if (str(query['text']).strip(" ") != '') and (str(query['text']).strip(" ").replace('\n," ") != "/*Write your code here!*/")  :
     try:
         for query in query['text'].lower().split(';'):
             st.text('')
