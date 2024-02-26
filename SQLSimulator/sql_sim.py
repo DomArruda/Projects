@@ -54,7 +54,7 @@ if button_bool:
 # there's better ways to do this but oh well. 
 
 st.markdown("*Write Your SQL Code Below. Press ctrl + enter to run the query.*")
-query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", key="editor", height = 500, theme= "light", id= id)
+query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", key="editor", height = 500, theme= "light")
 
 if str(query['text']) != '':
     try:
