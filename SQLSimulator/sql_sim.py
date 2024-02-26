@@ -33,7 +33,7 @@ def query_database(query):
     df = conn.execute(query).df()
     return df
 
-
+"""
 button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
 
 if button_bool: 
@@ -44,6 +44,8 @@ if button_bool: 
     st.markdown(f'*Number of cols:     {df.shape[1]:,}*')
     st.text('')
     st.text('')
+
+"""
 
 # User Input
 query = st.text_area(label = "Write your SQL Query here")
