@@ -35,10 +35,10 @@ def query_database(query):
     return df
 
 
-button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS".lower())
+button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS OF THE SALES TABLE")
 
 if button_bool:
-    df = query_database(query = "SELECT * FROM SALES LIMIT 5")
+    df = query_database(query = "SELECT * FROM SALES LIMIT 5".lower())
     st.markdown("*Query: SELECT * FROM SALES LIMIT 5*")
     st.dataframe(df, use_container_width = False)  
     st.markdown(f'*Number of rows:{df.shape[0]:,}*')  
