@@ -50,6 +50,7 @@ if button_bool:
     st.markdown(f'*Number of cols:{df.shape[1]:,}*')
     st.text('')
     st.text('')
+    st.text(' ')
 
 
 
