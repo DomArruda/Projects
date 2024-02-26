@@ -58,7 +58,7 @@ def CreateQuery():
     
     if str(query['text']) != '':
         try:
-            for query in query['text'].split(";")
+            for query in query['text'].split(";"):
                 st.text('')
                 df = query_database(query = query['text'].lower())
                 st.dataframe(df, use_container_width = False)
@@ -68,5 +68,5 @@ def CreateQuery():
                 st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
 
 
-if __name__ == "main"
+if __name__ == "main":
     CreateQuery()
