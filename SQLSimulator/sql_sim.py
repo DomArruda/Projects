@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-import streamlit_code_editor
+from code_editor import code_editor
 from sqlalchemy import create_engine
 import duckdb
 from PIL import Image
@@ -50,7 +50,7 @@ if button_bool:
 
 # User Input
 st.markdown("*Write Your SQL Code Below*")
-query = st.code_editor(language = "SQL").lower()
+query = code_editor(code="", lang="sql", key="editor")
 
 if str(query) != '':
     try:
