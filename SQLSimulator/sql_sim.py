@@ -50,7 +50,7 @@ if button_bool:
 
 # User Input
 st.markdown("*Write Your SQL Code Below. Press ctrl + enter to run the query.*")
-query = code_editor(code="", lang="sql", key="editor")
+query = code_editor(code="", lang="sql", key="editor", height = 500, theme= "light")
 
 if str(query['text']) != '':
     try:
