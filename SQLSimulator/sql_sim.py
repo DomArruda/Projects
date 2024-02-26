@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np 
 import streamlit as st
 from code_editor import code_editor
 from sqlalchemy import create_engine
@@ -50,9 +51,11 @@ if button_bool:
 
 # User Input
 
-def CreateQuery():
+# there's better ways to do this but oh well. 
+id = 0 
+def CreateQuery(id):
     st.markdown("*Write Your SQL Code Below. Press ctrl + enter to run the query.*")
-    query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", key="editor", height = 500, theme= "light")
+    query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", key="editor", height = 500, theme= "light", id= id)
     
     if str(query['text']) != '':
         try:
@@ -66,4 +69,5 @@ def CreateQuery():
 
 
 while True:
-    CreateQuery()
+    CreateQuery(id)
+    id+=1
