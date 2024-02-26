@@ -52,7 +52,7 @@ if button_bool:
 st.markdown("*Write Your SQL Code Below*")
 query = code_editor(code="", lang="sql", key="editor")
 
-if str(query) != '':
+if str(query['text']) != '':
     try:
         st.text('')
         df = query_database(query = query)
