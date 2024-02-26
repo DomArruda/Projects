@@ -58,9 +58,9 @@ query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", ke
 
 if str(query['text']) != '':
     try:
-        for query in query['text'].split(';'):
+        for query in query['text'].lower().split(';'):
             st.text('')
-            df = query_database(query = query['text'].lower())
+            df = query_database(query = query)
             st.dataframe(df, use_container_width = False)
             st.markdown(f'*Number of rows:{df.shape[0]:,}*')
             st.markdown(f'*Number of cols:{df.shape[1]:,}*')
