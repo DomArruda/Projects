@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 import duckdb
 from PIL import Image
 
-
+# *** UI Elements ***
 image = Image.open("SQLSimulator/database_schema.png")
 st.title("SQL SIMULATOR ⚙️")
 st.image(image, caption = '', use_column_width = True)
@@ -27,13 +27,13 @@ def create_tables():
 
 create_tables()
 
-
+# *** Helper Functions ***
 def query_database(query):
     conn = duckdb.connect()
     df = conn.execute(query).df()
     return df
 
-"""
+# *** Initial Display *** 
 button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
 
 if button_bool: 
@@ -45,9 +45,7 @@ if button_bool: 
     st.text('')
     st.text('')
 
-"""
-
-# User Input
+# *** User Query Input ***
 query = st.text_area(label = "Write your SQL Query here")
 
 if str(query) != '':
