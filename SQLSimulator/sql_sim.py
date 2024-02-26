@@ -47,8 +47,6 @@ if button_bool:
     st.text('')
     st.text('')
 
-
-
 # User Input
 
 # there's better ways to do this but oh well. 
