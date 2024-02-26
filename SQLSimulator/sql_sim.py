@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-import streamlit code editor
+import streamlit_code_editor
 from sqlalchemy import create_engine
 import duckdb
 from PIL import Image
