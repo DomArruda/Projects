@@ -12,6 +12,7 @@ st.title("SQL SIMULATOR ⚙️")
 st.image(image, caption = '', use_column_width = True)
 st.text('')
 st.text('')
+st.text("")
 
 # Helper Functions...
 def read_data():
@@ -37,7 +38,7 @@ def query_database(query):
     df = conn.execute(query).df()
     return df
 
-
+st.text("")
 button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS OF THE SALES TABLE")
 st.text('')
 
