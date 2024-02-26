@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import streamlit code editor
 from sqlalchemy import create_engine
 import duckdb
 from PIL import Image
@@ -48,7 +49,8 @@ if button_bool:
 
 
 # User Input
-query = st.text_area(label = "Write your SQL Query here").lower()
+st.markdown("*Write Your SQL Code Below*")
+query = st.code_editor(language = "SQL").lower()
 
 if str(query) != '':
     try:
