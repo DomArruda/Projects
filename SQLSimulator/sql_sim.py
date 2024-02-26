@@ -1,51 +1,59 @@
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine
-from pyspark.sql import SparkSession
+import duckdb
 from PIL import Image
+
+
 image = Image.open("SQLSimulator/database_schema.png")
-spark = SparkSession.builder.appName("SQL_Sim").getOrCreate()
 st.title("SQL SIMULATOR ⚙️")
 st.image(image, caption = '', use_column_width = True)
 
+# *** Data Loading ***
 def read_data():
-    df1 = spark.read.csv(r"SQLSimualtor/Salespeople.csv", header=True, inferSchema=True)
-    df2 = spark.read.csv(r"SQLSimulator/Salespeople_Data.csv", header=True, inferSchema=True)
-    df3 = spark.read.csv(r"SQLSimulator/Transactions.csv", header=True, inferSchema=True)
+    df1 = pd.read_csv("SQLSimulator/Salespeople.csv")
+    df2 = pd.read_csv("SQLSimulator/Salespeople_Data.csv")
+    df3 = pd.read_csv("SQLSimulator/Transactions.csv")
     return df1, df2, df3
 
-salespeople, sales, transactions= read_data()
-@st.cache
+salespeople, sales, transactions = read_data()
+
+# *** DuckDB Setup ***
 def create_tables():
-    salespeople.createOrReplaceTempView("Salespeople")
-    sales.createOrReplaceTempView("Sales")
-    transactions.createOrReplaceTempView("Transactions")
+    conn = duckdb.connect()
+    conn.register("Salespeople", salespeople)
+    conn.register("Sales", sales)
+    conn.register("Transactions", transactions)
 
 create_tables()
-button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
+
 
 def query_database(query):
-    df = spark.sql(query)
+    conn = duckdb.connect()
+    df = conn.execute(query).df()
     return df
 
-if button_bool: 
+
+button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
+
+if button_bool: 
     df = query_database(query = "SELECT * FROM SALES LIMIT 5")
     st.markdown("*Query: SELECT * FROM SALES LIMIT 5*")
-    st.dataframe(df.toPandas())
-    button_bool = False
-    st.markdown(f'*Number of rows:         {df.count():,}*')
-    st.markdown(f'*Number of cols:         {len(df.columns):,}*')
+    st.dataframe(df, use_container_width = False)  # Adjusted for Streamlit display
+    st.markdown(f'*Number of rows:     {df.shape[0]:,}*')  # Use .shape for Pandas
+    st.markdown(f'*Number of cols:     {df.shape[1]:,}*')
     st.text('')
     st.text('')
-    
 
+# User Input
 query = st.text_area(label = "Write your SQL Query here")
+
 if str(query) != '':
-    try: 
+    try: 
         st.text('')
         df = query_database(query = query)
-        st.dataframe(df.toPandas(), use_container_width = False)
-        st.markdown(f'*Number of rows:         {df.count():,}*')
-        st.markdown(f'*Number of cols:         {len(df.columns):,}*')
-    except: 
-        st.markdown("Oops! Looks like we've encountered an error. Try checking your query")
+        st.dataframe(df, use_container_width = False)
+        st.markdown(f'*Number of rows:     {df.shape[0]:,}*')
+        st.markdown(f'*Number of cols:     {df.shape[1]:,}*')
+    except Exception as e: 
+        st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
