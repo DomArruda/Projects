@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 import duckdb
 from PIL import Image
 
-# *** UI Elements ***
+
 image = Image.open("SQLSimulator/database_schema.png")
 st.title("SQL SIMULATOR ⚙️")
 st.image(image, caption = '', use_column_width = True)
@@ -27,33 +27,35 @@ def create_tables():
 
 create_tables()
 
-# *** Helper Functions ***
+
 def query_database(query):
     conn = duckdb.connect()
     df = conn.execute(query).df()
     return df
 
-# *** Initial Display *** 
+
 button_bool = st.button("CLICK HERE TO GRAB THE FIRST 5 ROWS")
 
-if button_bool: 
+if button_bool:
     df = query_database(query = "SELECT * FROM SALES LIMIT 5")
     st.markdown("*Query: SELECT * FROM SALES LIMIT 5*")
     st.dataframe(df, use_container_width = False)  # Adjusted for Streamlit display
-    st.markdown(f'*Number of rows:     {df.shape[0]:,}*')  # Use .shape for Pandas
-    st.markdown(f'*Number of cols:     {df.shape[1]:,}*')
+    st.markdown(f'*Number of rows:{df.shape[0]:,}*')  # Use .shape for Pandas
+    st.markdown(f'*Number of cols:{df.shape[1]:,}*')
     st.text('')
     st.text('')
 
-# *** User Query Input ***
+
+
+# User Input
 query = st.text_area(label = "Write your SQL Query here")
 
 if str(query) != '':
-    try: 
+    try:
         st.text('')
         df = query_database(query = query)
         st.dataframe(df, use_container_width = False)
-        st.markdown(f'*Number of rows:     {df.shape[0]:,}*')
-        st.markdown(f'*Number of cols:     {df.shape[1]:,}*')
-    except Exception as e: 
+        st.markdown(f'*Number of rows:{df.shape[0]:,}*')
+        st.markdown(f'*Number of cols:{df.shape[1]:,}*')
+    except Exception as e:
         st.markdown(f"Oops! Looks like we've encountered an error. Try checking your query. (Error: {e})")
