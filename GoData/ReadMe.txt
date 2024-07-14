@@ -1,4 +1,5 @@
-This is very much a WIP and an attempt at dataframe implementations in Go. Implementation is not optimized and heavily inspired by Gota. This mainly served as a way to learn Go in a fun way. I cheated a little and used a LLM a bit. :) 
+This is very much a WIP and an attempt at a dataframe implementation in Go. Implementation is not optimized and heavily inspired by Gota. This mainly served as a way to learn Go in a fun way.
+Data is fictitious and generated for test purposes. I cheated a little and used a LLM a bit :) 
 
 Next steps: 
 
