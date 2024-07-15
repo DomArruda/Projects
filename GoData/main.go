@@ -698,6 +698,259 @@ func applyValue(value interface{}, row []DataValue) DataValue {
 	}
 }
 
+// DataFrame Methods
+
+func (df *DataFrame) Rename(oldName, newName string) error {
+	index := df.getColumnIndex(oldName)
+	if index == -1 {
+		return fmt.Errorf("column '%s' not found", oldName)
+	}
+	df.Columns[index] = newName
+	df.ColumnMap[newName] = df.ColumnMap[oldName]
+	delete(df.ColumnMap, oldName)
+	return nil
+}
+
+func (df *DataFrame) Concat(other *DataFrame) *DataFrame {
+	if df == nil {
+		return other
+	}
+	if other == nil {
+		return df
+	}
+
+	newColumns := make([]string, len(df.Columns))
+	copy(newColumns, df.Columns)
+
+	for _, col := range other.Columns {
+		if df.getColumnIndex(col) == -1 {
+			newColumns = append(newColumns, col)
+		}
+	}
+
+	newData := make([][]DataValue, len(df.Data)+len(other.Data))
+	copy(newData, df.Data)
+
+	for i, row := range other.Data {
+		newRow := make([]DataValue, len(newColumns))
+		for j, col := range newColumns {
+			if index := other.getColumnIndex(col); index != -1 && index < len(row) {
+				newRow[j] = row[index]
+			} else {
+				newRow[j] = DataValue{Type: "null", Value: nil}
+			}
+		}
+		newData[len(df.Data)+i] = newRow
+	}
+
+	newDF := &DataFrame{
+		Columns:   newColumns,
+		Data:      newData,
+		ColumnMap: make(map[string]*Series),
+	}
+
+	for _, col := range newColumns {
+		newCol := make([]DataValue, len(newData))
+		for i, row := range newData {
+			colIndex := newDF.getColumnIndex(col)
+			if colIndex != -1 && colIndex < len(row) {
+				newCol[i] = row[colIndex]
+			} else {
+				newCol[i] = DataValue{Type: "null", Value: nil}
+			}
+		}
+		newDF.ColumnMap[col] = NewSeries(newCol)
+	}
+
+	return newDF
+}
+
+func (df *DataFrame) Cumsum() *DataFrame {
+	newDF := &DataFrame{
+		Columns:   df.Columns,
+		Data:      make([][]DataValue, len(df.Data)),
+		ColumnMap: make(map[string]*Series),
+	}
+
+	for i, col := range df.Columns {
+		series := df.Col(col)
+		if series.dtype == "float" || series.dtype == "int" {
+			newSeries := series.Cumsum()
+			newDF.ColumnMap[col] = newSeries
+
+			for j := range newDF.Data {
+				if newDF.Data[j] == nil {
+					newDF.Data[j] = make([]DataValue, len(df.Columns))
+				}
+				newDF.Data[j][i] = newSeries.data[j]
+			}
+		}
+	}
+
+	return newDF
+}
+
+// Series Methods
+
+func (s *Series) Cumsum() *Series {
+	newData := make([]DataValue, len(s.data))
+	var sum float64
+
+	for i, v := range s.data {
+		if v.Type != "null" {
+			f, ok := toFloat64(v)
+			if ok {
+				sum += f
+				newData[i] = DataValue{Type: "float", Value: sum}
+			} else {
+				newData[i] = DataValue{Type: "null", Value: nil}
+			}
+		} else {
+			newData[i] = DataValue{Type: "null", Value: nil}
+		}
+	}
+
+	return &Series{data: newData, dtype: "float"}
+}
+
+func (s *Series) Mode() ([]interface{}, error) {
+	if s == nil {
+		return nil, fmt.Errorf("series is nil")
+	}
+
+	if len(s.data) == 0 {
+		return nil, fmt.Errorf("series is empty")
+	}
+
+	counts := make(map[interface{}]int)
+	for _, v := range s.data {
+		if v.Type != "null" {
+			counts[v.Value]++
+		}
+	}
+
+	if len(counts) == 0 {
+		return nil, fmt.Errorf("no non-null values in series")
+	}
+
+	maxCount := 0
+	for _, count := range counts {
+		if count > maxCount {
+			maxCount = count
+		}
+	}
+
+	var modes []interface{}
+	for value, count := range counts {
+		if count == maxCount {
+			modes = append(modes, value)
+		}
+	}
+
+	return modes, nil
+}
+func (s *Series) Quantile(q float64) (float64, error) {
+	if s == nil {
+		return 0, fmt.Errorf("series is nil")
+	}
+
+	if q < 0 || q > 1 {
+		return 0, fmt.Errorf("quantile must be between 0 and 1")
+	}
+
+	var floatArray []float64
+	for _, val := range s.data {
+		if val.Type != "null" {
+			f, ok := toFloat64(val)
+			if ok {
+				floatArray = append(floatArray, f)
+			}
+		}
+	}
+
+	if len(floatArray) == 0 {
+		return 0, fmt.Errorf("no numeric data in series")
+	}
+
+	sort.Float64s(floatArray)
+
+	index := q * float64(len(floatArray)-1)
+	lower := math.Floor(index)
+	upper := math.Ceil(index)
+
+	if lower == upper {
+		return floatArray[int(lower)], nil
+	}
+
+	lowerValue := floatArray[int(lower)]
+	upperValue := floatArray[int(upper)]
+
+	interpolation := index - lower
+	result := lowerValue + interpolation*(upperValue-lowerValue)
+
+	return result, nil
+}
+
+func (s *Series) Median() (float64, error) {
+	if s == nil {
+		return 0, fmt.Errorf("series is nil")
+	}
+	return s.Quantile(0.5)
+}
+
+func (s *Series) Nsmallest(n int) (*Series, error) {
+	values := make([]DataValue, len(s.data))
+	copy(values, s.data)
+
+	sort.Slice(values, func(i, j int) bool {
+		if values[i].Type == "null" {
+			return false
+		}
+		if values[j].Type == "null" {
+			return true
+		}
+		v1, _ := toFloat64(values[i])
+		v2, _ := toFloat64(values[j])
+		return v1 < v2
+	})
+
+	if n > len(values) {
+		n = len(values)
+	}
+
+	return &Series{data: values[:n], dtype: s.dtype}, nil
+}
+
+func (s *Series) Nlargest(n int) (*Series, error) {
+	if s == nil {
+		return nil, fmt.Errorf("series is nil")
+	}
+
+	values := make([]DataValue, len(s.data))
+	copy(values, s.data)
+
+	sort.Slice(values, func(i, j int) bool {
+		if values[i].Type == "null" {
+			return false
+		}
+		if values[j].Type == "null" {
+			return true
+		}
+		v1, ok1 := toFloat64(values[i])
+		v2, ok2 := toFloat64(values[j])
+		if !ok1 || !ok2 {
+			return false
+		}
+		return v1 > v2
+	})
+
+	if n > len(values) {
+		n = len(values)
+	}
+
+	return &Series{data: values[:n], dtype: s.dtype}, nil
+}
+
 func (df *DataFrame) GroupBy(categoricalCols []string, numericalCols []string, aggregations []string) (*DataFrame, error) {
 	groups := make(map[string][][]DataValue)
 
@@ -1086,6 +1339,36 @@ func (df *DataFrame) Head(n int) *DataFrame {
 	}
 
 	return newDF
+}
+
+func (s *Series) Print() {
+	fmt.Println("Series:")
+	for i, v := range s.data {
+		if i >= 10 {
+			fmt.Println("...")
+			break
+		}
+		if v.Type == "null" {
+			fmt.Printf("%d: null\n", i)
+		} else {
+			fmt.Printf("%d: %v\n", i, v.Value)
+		}
+	}
+	fmt.Printf("Length: %d, Type: %s\n", len(s.data), s.dtype)
+}
+
+func (s *Series) Head(n int) *Series {
+	if n > len(s.data) {
+		n = len(s.data)
+	}
+
+	newData := make([]DataValue, n)
+	copy(newData, s.data[:n])
+
+	return &Series{
+		data:  newData,
+		dtype: s.dtype,
+	}
 }
 
 func (df *DataFrame) Tail(n int) *DataFrame {
@@ -1712,7 +1995,7 @@ func main() {
 	// Example 4: Unique values in a column
 	uniqueStates := df1.Col("State").Unique()
 	fmt.Println("\nUnique States:")
-	fmt.Println(uniqueStates)
+	uniqueStates.Print()
 
 	// Example 5: Sorting
 	sortedDF, err := df1.Sort([]string{"Salary"}, []bool{true})
@@ -1729,13 +2012,13 @@ func main() {
 		fmt.Println("Error converting Purchase to int:", err)
 	} else {
 		fmt.Println("\nPurchase column converted to int:")
-		fmt.Println(df1.Col("Purchase"))
+		df1.Col("Purchase").Print()
 	}
 
 	// Example 7: Describe
 	describeDF := df1.Describe()
 	fmt.Println("\nDataFrame Description:")
-	describeDF.Head(10).Print()
+	describeDF.Print()
 
 	// Example 8: Head and Tail
 	fmt.Println("\nFirst 5 rows:")
@@ -1776,28 +2059,9 @@ func main() {
 	fmt.Println("\nDataframe with new PurchaseCategory column:")
 	df1.Head(10).Print()
 
-	df1.AddColumn("PurchaseCategoryComplex", func(row []DataValue) DataValue {
-		purchase, _ := strconv.ParseFloat(fmt.Sprintf("%v", row[df1.getColumnIndex("Purchase")].Value), 64)
-		name := fmt.Sprintf("%v", row[df1.getColumnIndex("Name")].Value)
-
-		if (purchase <= 1000000) && (name == "Dominic") {
-			return DataValue{Type: "string", Value: "High Dom Purchase"}
-		} else if name == "Dominic" {
-			return DataValue{Type: "string", Value: "Regular Dom Purchase"}
-		} else {
-			return DataValue{Type: "string", Value: "Regular Purchase"}
-		}
-	})
-	fmt.Println("\nDataframe with new PurchaseCategoryComplex column:")
-	df1.Head(10).Print()
-
 	// Example 13: Drop multiple columns
 	dfDropped := df1.Drop("Purchase", "Salary")
 	fmt.Println("\nDataFrame after dropping 'Purchase' and 'Salary' columns:")
-	dfDropped.Head(10).Print()
-
-	dfDropped = df1.Drop([]string{"Purchase", "Salary"})
-	fmt.Println("\nDropping with string array:")
 	dfDropped.Head(10).Print()
 
 	// Example 14: Adding Column based on string condition
@@ -1831,16 +2095,7 @@ func main() {
 		dfFromCSV.Print()
 	}
 
-	/*
-
-		dfDropNA := dfFromCSV.DropNA()
-		fmt.Println("\nDataFrame after dropping NA values:")
-		dfDropNA.Print()
-
-	*/
-
-	// Example 18: Reading JSON into dataframe...
-
+	// Example 17: Reading JSON into dataframe
 	jsonFilename := "data.json"
 	jsonDF, err := ReadJSONToDataFrame(jsonFilename)
 	if err != nil {
@@ -1850,7 +2105,7 @@ func main() {
 		jsonDF.Print()
 	}
 
-	// Example 19: Joining DataFrames
+	// Example 18: Joining DataFrames
 	leftDFString := `ProductID,Transaction
     1,20
     2,30
@@ -1862,7 +2117,7 @@ func main() {
     1,Book
     2,Espresso
     3,Sandwich
-	5,Capybara`
+    5,Capybara`
 
 	leftDF, err := ReadCSVStringToDataFrame(leftDFString)
 	if err != nil {
@@ -1878,83 +2133,166 @@ func main() {
 
 	leftJoinedDF, err := leftDF.Join(rightDF, "left", "ProductID", "ProductID")
 	if err != nil {
-		fmt.Println("Error in Join:", err)
+		fmt.Println("Error in Left Join:", err)
 	} else {
 		fmt.Println("\nLeft Joined DataFrame:")
 		leftJoinedDF.Print()
 	}
 
-	// Example 20: Inner joined DF
-
+	// Example 19: Inner joined DF
 	innerJoinedDF, err := leftDF.Join(rightDF, "inner", "ProductID", "ProductID")
 	if err != nil {
-		fmt.Println("Error in Join:", err)
+		fmt.Println("Error in Inner Join:", err)
 	} else {
-		fmt.Println("Inner Joined DataFrame:")
+		fmt.Println("\nInner Joined DataFrame:")
 		innerJoinedDF.Print()
 	}
 
-	// Example 21: Outer Join Dataframe
-
+	// Example 20: Outer Join Dataframe
 	outerJoinedDF, err := leftDF.Join(rightDF, "outer", "ProductID", "ProductID")
 	if err != nil {
-		fmt.Println("Error in Join:", err)
+		fmt.Println("Error in Outer Join:", err)
 	} else {
-		fmt.Println("Outer Joined DataFrame:")
+		fmt.Println("\nOuter Joined DataFrame:")
 		outerJoinedDF.Print()
 	}
 
-	// Example 22: Reading a Million Rows From CSV And Getting Descriptive Stats....
+	// Example 21: Reading 100k Rows From CSV And Getting Descriptive Stats
 	timeStart := time.Now()
 	largeDF, err := ReadCSVToDataFrame("large_datav1.csv")
 	if err != nil {
-		log.Fatalf("Couldn't Load CSV...")
+		log.Fatalf("Couldn't Load CSV: %v", err)
 	}
 
 	largeDFStats := largeDF.Describe()
 	largeDFStats.Print()
 
 	duration := time.Since(timeStart)
-	fmt.Println("\nReading a 1 million row csv and getting descriptive stats took ", duration, "seconds")
+	fmt.Printf("\nReading a 100k row csv and getting descriptive stats took %v\n", duration)
 
-	/* Example 23: Reading a Million Row Parquet file...
-	// WIP ... not working...
+	// Example 22: Series Aggregations
+	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
+		dfSum, err := revenueSeries.Sum()
+		if err != nil {
+			fmt.Println("Error calculating sum of Revenue:", err)
+		} else {
+			fmt.Printf("The sum of Revenue is %.2f\n", dfSum)
+		}
 
-	filename := "data.parquet"
+		dfAverage, err := revenueSeries.Average()
+		if err != nil {
+			fmt.Println("Error calculating average of Revenue:", err)
+		} else {
+			fmt.Printf("The Average of Revenue is %.2f\n", dfAverage)
+		}
 
-	df, err := ReadParquetToDataFrame(filename)
-	if err != nil {
-		log.Fatalf("Error reading Parquet file: %v", err)
+		dfCount := revenueSeries.CountNonNull()
+		fmt.Println("Number of Non-Null values in Revenue:", dfCount)
 
-	}
+		lowPercentile, err := revenueSeries.Percentile(1.0)
+		if err != nil {
+			fmt.Println("Error calculating 1st percentile of Revenue:", err)
+		} else {
+			fmt.Printf("The 1st percentile of Revenue is %.2f\n", lowPercentile)
+		}
 
-	fmt.Println(df.Columns)
-	*/
-	// Example 25: Series Aggregations
-	dfSum, err := largeDF.Col("Revenue").Sum()
-	if err != nil {
-		fmt.Println("Error calculating sum:", err)
+		highPercentile, err := revenueSeries.Percentile(99.0)
+		if err != nil {
+			fmt.Println("Error calculating 99th percentile of Revenue:", err)
+		} else {
+			fmt.Printf("The 99th percentile of Revenue is %.2f\n", highPercentile)
+		}
 	} else {
-		fmt.Printf("The sum of Revenue is %.2f\n", dfSum)
+		fmt.Println("Revenue column not found in largeDF")
 	}
 
-	dfAverage, err := largeDF.Col("Revenue").Average()
-
+	// Example 23: Rename a column
+	err = df1.Rename("Purchase", "Amount")
 	if err != nil {
-		fmt.Println("Error calculating sum:", err)
+		fmt.Println("Error renaming column:", err)
 	} else {
-		fmt.Printf("The Average of Revenue is %.2f\n", dfAverage)
+		fmt.Println("\nDataFrame after renaming 'Purchase' to 'Amount':")
+		df1.Head(5).Print()
 	}
 
-	dfCount := largeDF.Col("Revenue").CountNonNull()
-	fmt.Println("Number of Non-Null values: ", dfCount)
+	// Example 24: Concatenate two DataFrames
+	df2 := df1.Head(5) // Create a smaller DataFrame for demonstration
+	concatDF := df1.Concat(df2)
+	fmt.Println("\nConcatenated DataFrame:")
+	concatDF.Tail(10).Print()
 
-	// Let's get the 1st and 99th percentile...
+	// Example 25: Cumulative sum of a numeric column
+	cumsumDF := df1.Cumsum()
+	fmt.Println("\nCumulative sum of numeric columns:")
+	cumsumDF.Head(10).Print()
 
-	lowPercentile, err := largeDF.Col("Revenue").Percentile(1.0)
-	fmt.Println("The 1st percentile is", lowPercentile)
+	// Example 26: Mode of a column
+	if stateSeries := df1.Col("State"); stateSeries != nil {
+		modeValues, err := stateSeries.Mode()
+		if err != nil {
+			fmt.Println("Error calculating mode of State:", err)
+		} else {
+			fmt.Println("\nMode of 'State' column:", modeValues)
+		}
+	} else {
+		fmt.Println("State column not found")
+	}
 
-	highPercentile, err := largeDF.Col("Revenue").Percentile(99.0)
-	fmt.Println("The 99th percentile is", highPercentile)
+	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
+		medianRevenue, err := revenueSeries.Median()
+		if err != nil {
+			fmt.Println("Error calculating median revenue:", err)
+		} else {
+			fmt.Printf("\nMedian Revenue: %.2f\n", medianRevenue)
+		}
+	} else {
+		fmt.Println("Revenue column not found in largeDF")
+	}
 
+	// Example 28: Quantile of Revenue column
+	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
+		q75, err := revenueSeries.Quantile(0.75)
+		if err != nil {
+			fmt.Println("Error calculating 75th percentile of revenue:", err)
+		} else {
+			fmt.Printf("\n75th percentile of Revenue: %.2f\n", q75)
+		}
+	} else {
+		fmt.Println("Revenue column not found in largeDF")
+	}
+
+	// Example 29: Get the n largest values in Revenue column
+	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
+		top5Revenue, err := revenueSeries.Nlargest(5)
+		if err != nil {
+			fmt.Println("Error getting top 5 Revenue values:", err)
+		} else {
+			fmt.Println("\nTop 5 Revenue values:")
+			top5Revenue.Print()
+		}
+	} else {
+		fmt.Println("Revenue column not found in largeDF")
+	}
+
+	// Example 30: Get the n smallest values in Revenue column
+	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
+		bottom5Revenue, err := revenueSeries.Nsmallest(5)
+		if err != nil {
+			fmt.Println("Error getting bottom 5 Revenue values:", err)
+		} else {
+			fmt.Println("\nBottom 5 Revenue values:")
+			bottom5Revenue.Print()
+		}
+	} else {
+		fmt.Println("Revenue column not found in largeDF")
+	}
+
+	// Example 31: Cumulative sum of Revenue series
+	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
+		revenueCumsum := revenueSeries.Cumsum()
+		fmt.Println("\nCumulative sum of Revenue:")
+		revenueCumsum.Print()
+	} else {
+		fmt.Println("Revenue column not found in largeDF")
+	}
 }
