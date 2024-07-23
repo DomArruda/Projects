@@ -140,19 +140,25 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
 
 # Streamlit app
 st.title('Advanced Portfolio Optimization')
+# Streamlit app
+st.title('Advanced Portfolio Optimization')
 
 # Input section
 st.header('Portfolio Setup')
 ticker_input = st.text_input('Enter stock tickers (comma-separated)', 'WMT, DIS, KO, NFLX, MTCH, TGT, OXY, TDG, NOC, HWM, QCOM, META, AMZN')
 stock_tickers = [stock.strip() for stock in ticker_input.split(",")]
 
+# Reorganized date inputs
+st.subheader('Date Range Selection')
 col1, col2 = st.columns(2)
 with col1:
-    analysis_start = st.date_input('Analysis Start Date', datetime(2021, 1, 1))
-    analysis_end = st.date_input('Analysis End Date', datetime(2022, 12, 31))
+    st.markdown("**Analysis Period**")
+    analysis_start = st.date_input('Start Date', datetime(2021, 1, 1), key='analysis_start')
+    analysis_end = st.date_input('End Date', datetime(2022, 12, 31), key='analysis_end')
 with col2:
-    backtest_start = st.date_input('Backtest Start Date', datetime(2023, 1, 1))
-    backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31))
+    st.markdown("**Backtest Period**")
+    backtest_start = st.date_input('Start Date', datetime(2023, 1, 1), key='backtest_start')
+    backtest_end = st.date_input('End Date', datetime(2023, 12, 31), key='backtest_end')
 
 if st.button('Run Analysis'):
     try:
@@ -224,18 +230,27 @@ if st.button('Run Analysis'):
         st.header('Factor Analysis')
         factor_data = fetch_factor_data(backtest_start, backtest_end)
         for name, weights in portfolios.items():
+            st.subheader(f'{name}')
             portfolio_returns = (backtest_returns * weights).sum(axis=1)
             factor_model = factor_analysis(portfolio_returns, factor_data)
-            st.subheader(f'{name}')
-            st.write(factor_model.summary().tables[1])
+            
+            # Convert the summary table to a DataFrame for better presentation
+            summary_df = pd.read_html(factor_model.summary().tables[1].as_html(), header=0, index_col=0)[0]
+            st.dataframe(summary_df)
 
         # Bootstrap Analysis
         st.header('Bootstrap Analysis')
+        bootstrap_results = []
         for name, weights in portfolios.items():
             mean_sharpe, ci = bootstrap_sharpe_ratio(backtest_returns, weights)
-            st.subheader(f'{name}')
-            st.write(f"Mean Sharpe Ratio: {mean_sharpe:.4f}")
-            st.write(f"95% Confidence Interval: ({ci[0]:.4f}, {ci[1]:.4f})")
+            bootstrap_results.append({
+                'Strategy': name,
+                'Mean Sharpe Ratio': mean_sharpe,
+                'CI Lower': ci[0],
+                'CI Upper': ci[1]
+            })
+        bootstrap_df = pd.DataFrame(bootstrap_results)
+        st.dataframe(bootstrap_df)
 
         # Stress Testing
         st.header('Stress Test Results')
@@ -245,17 +260,13 @@ if st.button('Run Analysis'):
             'High Volatility': 1.0
         }
         stress_test_results = {name: stress_test(weights, backtest_returns, scenarios) for name, weights in portfolios.items()}
-        for name, scenario_results in stress_test_results.items():
-            st.subheader(f'{name}')
-            for scenario, result in scenario_results.items():
-                st.write(f"  {scenario}: {result:.2%}")
+        stress_test_df = pd.DataFrame(stress_test_results).T
+        st.dataframe(stress_test_df)
 
         # Summary statistics
         st.header('Portfolio Performance Summary')
-        for name, result in results.items():
-            st.subheader(f'{name}')
-            for metric, value in result.items():
-                st.write(f"  {metric}: {value:.4f}")
+        summary_df = pd.DataFrame(results).T
+        st.dataframe(summary_df)
 
         # Best strategy
         best_strategy = max(results, key=lambda x: results[x]['Sharpe Ratio'])
@@ -269,8 +280,8 @@ if st.button('Run Analysis'):
         weight_df = pd.DataFrame(best_weights.sort_values(ascending=False)).reset_index()
         weight_df.columns = ['Stock', 'Weight']
         weight_df['Weight'] = weight_df['Weight'].apply(lambda x: f"{x:.4f}")
-        st.table(weight_df)
+        st.dataframe(weight_df)
 
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")d
         st.error("Please check your inputs and try again.")
