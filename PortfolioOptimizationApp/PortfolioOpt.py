@@ -169,7 +169,17 @@ if st.button('Run Analysis'):
         analysis_returns = returns.loc[analysis_start:analysis_end]
         backtest_returns = returns.loc[backtest_start:backtest_end]
 
-        risk_free_rate = yf.Ticker("^TNX").history(start=analysis_start, end=backtest_end, progress=False)['Close'].iloc[-1] / 100 / 252
+        @st.cache_data
+        def get_risk_free_rate(start, end):
+            try:
+                tnx = yf.Ticker("^TNX")
+                history = tnx.history(start=start, end=end)
+                return history['Close'].iloc[-1] / 100 / 252
+            except Exception as e:
+                st.warning(f"Unable to fetch risk-free rate: {e}. Using default value of 0.02/252.")
+                return 0.02 / 252
+
+        risk_free_rate = get_risk_free_rate(analysis_start, backtest_end)
 
         @st.cache_data
         def get_market_cap(ticker):
