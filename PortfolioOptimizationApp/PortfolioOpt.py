@@ -221,8 +221,7 @@ if st.button('Run Analysis'):
         ax.grid(True)
         st.pyplot(fig)
 
-        # Factor Analysis
-        show_factor_analysis = st.checkbox("Show Factor Analysis")
+        show_factor_analysis = True # need to fix this later...
         if show_factor_analysis:
             st.header('Factor Analysis')
             factor_data = fetch_factor_data(backtest_start, backtest_end)
