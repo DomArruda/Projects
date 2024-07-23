@@ -141,10 +141,7 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
 # Input section
 st.header('Portfolio Setup')
 ticker_input = st.text_input('Enter stock tickers (comma-separated)', '')
-if ticker_input.count(",") > 0:
-    stock_tickers = []
-else:
-    stock_tickers = [stock.strip() for stock in ticker_input.split(",")]
+stock_tickers = [stock.strip() for stock in ticker_input.split(",")]
 
 # Reorganized date inputs
 st.subheader('Date Range Selection')
