@@ -158,7 +158,7 @@ with col2:
     analysis_end = st.date_input('Analysis End Date', datetime(2022, 12, 31), key='analysis_end')
     backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31), key='backtest_end')
 
-if st.button('Run Analysis') and len(stock_tickers) > 0:
+if st.button('Run Analysis'):
     try:
         # Data fetching and preprocessing
         @st.cache_data
