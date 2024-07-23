@@ -87,7 +87,7 @@ def risk_parity_portfolio(returns):
     return result.x
 
 def black_litterman_portfolio(returns, market_caps, risk_aversion=2.5, tau=0.05):
-    Sigma = returns.cov() * 252
+    Sigma = returns.cov() * 252 # Erm, what the Sigma?
     Pi = risk_aversion * Sigma.dot(market_caps)
     weights = np.linalg.inv(tau * Sigma + Sigma).dot(tau * Sigma.dot(market_caps) + Pi)
     return weights / weights.sum()
@@ -138,8 +138,6 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
   start_date = datetime.strptime(start_date, '%m/%d/%Y')
   end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
-# Streamlit app
-st.title('Advanced Portfolio Optimization')
 # Streamlit app
 st.title('Advanced Portfolio Optimization')
 
