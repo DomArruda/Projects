@@ -222,7 +222,8 @@ if st.button('Run Analysis'):
         st.pyplot(fig)
 
         # Factor Analysis
-        if st.button("Click here to view factor analysis", key="capybara"):
+        show_factor_analysis = st.checkbox("Show Factor Analysis")
+        if show_factor_analysis:
             st.header('Factor Analysis')
             factor_data = fetch_factor_data(backtest_start, backtest_end)
             for name, weights in portfolios.items():
