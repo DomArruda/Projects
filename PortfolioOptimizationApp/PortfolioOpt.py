@@ -138,7 +138,6 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
   start_date = datetime.strptime(start_date, '%m/%d/%Y')
   end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
-
 st.title('Advanced Portfolio Optimization')
 
 # Input section
@@ -155,95 +154,101 @@ with col2:
     backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31))
 
 if st.button('Run Analysis'):
-    # Data fetching and preprocessing
-    data = yf.download(stock_tickers, start=analysis_start, end=backtest_end)['Adj Close']
-    data = data.dropna(axis=1)
-    returns = data.pct_change().dropna()
+    try:
+        # Data fetching and preprocessing
+        yf.pdr_override()
+        data = pdr.get_data_yahoo(stock_tickers, start=analysis_start, end=backtest_end)['Adj Close']
+        data = data.dropna(axis=1)
+        returns = data.pct_change().dropna()
 
-    analysis_returns = returns.loc[analysis_start:analysis_end]
-    backtest_returns = returns.loc[backtest_start:backtest_end]
+        analysis_returns = returns.loc[analysis_start:analysis_end]
+        backtest_returns = returns.loc[backtest_start:backtest_end]
 
-    risk_free_rate = yf.Ticker("^TNX").history(start=analysis_start, end=backtest_end)['Close'].iloc[-1] / 100 / 252
+        risk_free_rate = yf.Ticker("^TNX").history(start=analysis_start, end=backtest_end)['Close'].iloc[-1] / 100 / 252
 
-    market_caps = pd.Series({ticker: yf.Ticker(ticker).info['marketCap'] for ticker in data.columns})
-    market_caps = market_caps / market_caps.sum()
+        market_caps = pd.Series({ticker: yf.Ticker(ticker).info.get('marketCap', 1e9) for ticker in data.columns})
+        market_caps = market_caps / market_caps.sum()
 
-    # Portfolio creation
-    portfolios = {
-        'Eigenportfolio': pd.Series(PCA(n_components=1).fit(analysis_returns).components_[0], index=data.columns),
-        'Equal-Weight': pd.Series(1/len(data.columns), index=data.columns),
-        'Minimum Variance': pd.Series(minimum_variance_portfolio(analysis_returns), index=data.columns),
-        'Maximum Sharpe Ratio': pd.Series(maximum_sharpe_ratio_portfolio(analysis_returns, risk_free_rate), index=data.columns),
-        'Risk Parity': pd.Series(risk_parity_portfolio(analysis_returns), index=data.columns),
-        'Black-Litterman': pd.Series(black_litterman_portfolio(analysis_returns, market_caps), index=data.columns),
-        'Momentum': momentum_portfolio(analysis_returns)
-    }
+        # Portfolio creation
+        portfolios = {
+            'Eigenportfolio': pd.Series(PCA(n_components=1).fit(analysis_returns).components_[0], index=data.columns),
+            'Equal-Weight': pd.Series(1/len(data.columns), index=data.columns),
+            'Minimum Variance': pd.Series(minimum_variance_portfolio(analysis_returns), index=data.columns),
+            'Maximum Sharpe Ratio': pd.Series(maximum_sharpe_ratio_portfolio(analysis_returns, risk_free_rate), index=data.columns),
+            'Risk Parity': pd.Series(risk_parity_portfolio(analysis_returns), index=data.columns),
+            'Black-Litterman': pd.Series(black_litterman_portfolio(analysis_returns, market_caps), index=data.columns),
+            'Momentum': momentum_portfolio(analysis_returns)
+        }
 
-    for name, weights in portfolios.items():
-        portfolios[name] = weights / weights.sum()
+        for name, weights in portfolios.items():
+            portfolios[name] = weights / weights.sum()
 
-    results = {name: calculate_performance(weights, backtest_returns, risk_free_rate) for name, weights in portfolios.items()}
+        results = {name: calculate_performance(weights, backtest_returns, risk_free_rate) for name, weights in portfolios.items()}
 
-    # Plotting
-    st.header('Portfolio Performance Comparison')
-    fig, ax = plt.subplots(figsize=(12, 6))
-    for name, weights in portfolios.items():
-        cumulative_return = (1 + (backtest_returns * weights).sum(axis=1)).cumprod()
-        ax.plot(cumulative_return.index, cumulative_return, label=f'{name} ({results[name]["Total Return"]:.2%})')
-    ax.set_title('Portfolio Performance Comparison (2023)')
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Cumulative Return')
-    ax.legend()
-    ax.grid(True)
-    st.pyplot(fig)
+        # Plotting
+        st.header('Portfolio Performance Comparison')
+        fig, ax = plt.subplots(figsize=(12, 6))
+        for name, weights in portfolios.items():
+            cumulative_return = (1 + (backtest_returns * weights).sum(axis=1)).cumprod()
+            ax.plot(cumulative_return.index, cumulative_return, label=f'{name} ({results[name]["Total Return"]:.2%})')
+        ax.set_title('Portfolio Performance Comparison (2023)')
+        ax.set_xlabel('Date')
+        ax.set_ylabel('Cumulative Return')
+        ax.legend()
+        ax.grid(True)
+        st.pyplot(fig)
 
-    # Factor Analysis
-    st.header('Factor Analysis')
-    factor_data = fetch_factor_data(backtest_start, backtest_end)
-    for name, weights in portfolios.items():
-        portfolio_returns = (backtest_returns * weights).sum(axis=1)
-        factor_model = factor_analysis(portfolio_returns, factor_data)
-        st.subheader(f'{name}')
-        st.write(factor_model.summary().tables[1])
+        # Factor Analysis
+        st.header('Factor Analysis')
+        factor_data = fetch_factor_data(backtest_start, backtest_end)
+        for name, weights in portfolios.items():
+            portfolio_returns = (backtest_returns * weights).sum(axis=1)
+            factor_model = factor_analysis(portfolio_returns, factor_data)
+            st.subheader(f'{name}')
+            st.write(factor_model.summary().tables[1])
 
-    # Bootstrap Analysis
-    st.header('Bootstrap Analysis')
-    for name, weights in portfolios.items():
-        mean_sharpe, ci = bootstrap_sharpe_ratio(backtest_returns, weights)
-        st.subheader(f'{name}')
-        st.write(f"Mean Sharpe Ratio: {mean_sharpe:.4f}")
-        st.write(f"95% Confidence Interval: ({ci[0]:.4f}, {ci[1]:.4f})")
+        # Bootstrap Analysis
+        st.header('Bootstrap Analysis')
+        for name, weights in portfolios.items():
+            mean_sharpe, ci = bootstrap_sharpe_ratio(backtest_returns, weights)
+            st.subheader(f'{name}')
+            st.write(f"Mean Sharpe Ratio: {mean_sharpe:.4f}")
+            st.write(f"95% Confidence Interval: ({ci[0]:.4f}, {ci[1]:.4f})")
 
-    # Stress Testing
-    st.header('Stress Test Results')
-    scenarios = {
-        'Market Crash': 0.7,
-        'Economic Boom': 1.3,
-        'High Volatility': 1.0
-    }
-    stress_test_results = {name: stress_test(weights, backtest_returns, scenarios) for name, weights in portfolios.items()}
-    for name, scenario_results in stress_test_results.items():
-        st.subheader(f'{name}')
-        for scenario, result in scenario_results.items():
-            st.write(f"  {scenario}: {result:.2%}")
+        # Stress Testing
+        st.header('Stress Test Results')
+        scenarios = {
+            'Market Crash': 0.7,
+            'Economic Boom': 1.3,
+            'High Volatility': 1.0
+        }
+        stress_test_results = {name: stress_test(weights, backtest_returns, scenarios) for name, weights in portfolios.items()}
+        for name, scenario_results in stress_test_results.items():
+            st.subheader(f'{name}')
+            for scenario, result in scenario_results.items():
+                st.write(f"  {scenario}: {result:.2%}")
 
-    # Summary statistics
-    st.header('Portfolio Performance Summary')
-    for name, result in results.items():
-        st.subheader(f'{name}')
-        for metric, value in result.items():
-            st.write(f"  {metric}: {value:.4f}")
+        # Summary statistics
+        st.header('Portfolio Performance Summary')
+        for name, result in results.items():
+            st.subheader(f'{name}')
+            for metric, value in result.items():
+                st.write(f"  {metric}: {value:.4f}")
 
-    # Best strategy
-    best_strategy = max(results, key=lambda x: results[x]['Sharpe Ratio'])
-    st.header('Best Strategy')
-    st.write(f"Best Strategy: {best_strategy}")
-    st.write(f"Best Strategy Sharpe Ratio: {results[best_strategy]['Sharpe Ratio']:.4f}")
-    st.write(f"Best Strategy Total Return: {results[best_strategy]['Total Return']:.4%}")
+        # Best strategy
+        best_strategy = max(results, key=lambda x: results[x]['Sharpe Ratio'])
+        st.header('Best Strategy')
+        st.write(f"Best Strategy: {best_strategy}")
+        st.write(f"Best Strategy Sharpe Ratio: {results[best_strategy]['Sharpe Ratio']:.4f}")
+        st.write(f"Best Strategy Total Return: {results[best_strategy]['Total Return']:.4%}")
 
-    st.subheader('Best Strategy Weights')
-    best_weights = portfolios[best_strategy]
-    weight_df = pd.DataFrame(best_weights.sort_values(ascending=False)).reset_index()
-    weight_df.columns = ['Stock', 'Weight']
-    weight_df['Weight'] = weight_df['Weight'].apply(lambda x: f"{x:.4f}")
-    st.table(weight_df)
+        st.subheader('Best Strategy Weights')
+        best_weights = portfolios[best_strategy]
+        weight_df = pd.DataFrame(best_weights.sort_values(ascending=False)).reset_index()
+        weight_df.columns = ['Stock', 'Weight']
+        weight_df['Weight'] = weight_df['Weight'].apply(lambda x: f"{x:.4f}")
+        st.table(weight_df)
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+        st.error("Please check your inputs and try again."
