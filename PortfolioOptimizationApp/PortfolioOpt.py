@@ -16,7 +16,7 @@ from PIL import Image
 
 warnings.filterwarnings('ignore')
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
-st.title('Python Portfolio Optimization')
+st.title('Portfolio Optimization & Analysis')
 st.image(image,caption = '', use_column_width = True)
     
 def fetch_factor_data(start_date, end_date):
@@ -138,13 +138,13 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
   start_date = datetime.strptime(start_date, '%m/%d/%Y')
   end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
-# Streamlit app
-st.title('Advanced Portfolio Optimization')
-
 # Input section
 st.header('Portfolio Setup')
-ticker_input = st.text_input('Enter stock tickers (comma-separated)', 'WMT, DIS, KO, NFLX, MTCH, TGT, OXY, TDG, NOC, HWM, QCOM, META, AMZN')
-stock_tickers = [stock.strip() for stock in ticker_input.split(",")]
+ticker_input = st.text_input('Enter stock tickers (comma-separated)', '')
+if ticker_input.count(",') > 0:
+    stock_tickers = []
+else:
+    stock_tickers = [stock.strip() for stock in ticker_input.split(",")]
 
 # Reorganized date inputs
 st.subheader('Date Range Selection')
@@ -158,7 +158,7 @@ with col2:
     backtest_start = st.date_input('Start Date', datetime(2023, 1, 1), key='backtest_start')
     backtest_end = st.date_input('End Date', datetime(2023, 12, 31), key='backtest_end')
 
-if st.button('Run Analysis'):
+if st.button('Run Analysis') and len(stock_tickers) > 0:
     try:
         # Data fetching and preprocessing
         @st.cache_data
