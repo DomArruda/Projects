@@ -222,16 +222,16 @@ if st.button('Run Analysis'):
         st.pyplot(fig)
 
         # Factor Analysis
-        st.header('Factor Analysis')
-        factor_data = fetch_factor_data(backtest_start, backtest_end)
-        for name, weights in portfolios.items():
-            st.subheader(f'{name}')
-            portfolio_returns = (backtest_returns * weights).sum(axis=1)
-            factor_model = factor_analysis(portfolio_returns, factor_data)
-            
-            # Convert the summary table to a DataFrame for better presentation
-            summary_df = pd.read_html(factor_model.summary().tables[1].as_html(), header=0, index_col=0)[0]
-            if st.button("Click here to view factor analysis"):
+        if st.button("Click here to view factor analysis", key="capybara"):
+            st.header('Factor Analysis')
+            factor_data = fetch_factor_data(backtest_start, backtest_end)
+            for name, weights in portfolios.items():
+                st.subheader(f'{name}')
+                portfolio_returns = (backtest_returns * weights).sum(axis=1)
+                factor_model = factor_analysis(portfolio_returns, factor_data)
+                
+                # Convert the summary table to a DataFrame for better presentation
+                summary_df = pd.read_html(factor_model.summary().tables[1].as_html(), header=0, index_col=0)[0]
                 st.dataframe(summary_df)
 
         # Bootstrap Analysis
