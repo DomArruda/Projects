@@ -138,6 +138,7 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
   start_date = datetime.strptime(start_date, '%m/%d/%Y')
   end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
+# Streamlit app
 st.title('Advanced Portfolio Optimization')
 
 # Input section
@@ -156,17 +157,28 @@ with col2:
 if st.button('Run Analysis'):
     try:
         # Data fetching and preprocessing
-        yf.pdr_override()
-        data = pdr.get_data_yahoo(stock_tickers, start=analysis_start, end=backtest_end)['Adj Close']
+        @st.cache_data
+        def fetch_data(tickers, start, end):
+            data = yf.download(tickers, start=start, end=end, progress=False)
+            return data['Adj Close']
+
+        data = fetch_data(stock_tickers, analysis_start, backtest_end)
         data = data.dropna(axis=1)
         returns = data.pct_change().dropna()
 
         analysis_returns = returns.loc[analysis_start:analysis_end]
         backtest_returns = returns.loc[backtest_start:backtest_end]
 
-        risk_free_rate = yf.Ticker("^TNX").history(start=analysis_start, end=backtest_end)['Close'].iloc[-1] / 100 / 252
+        risk_free_rate = yf.Ticker("^TNX").history(start=analysis_start, end=backtest_end, progress=False)['Close'].iloc[-1] / 100 / 252
 
-        market_caps = pd.Series({ticker: yf.Ticker(ticker).info.get('marketCap', 1e9) for ticker in data.columns})
+        @st.cache_data
+        def get_market_cap(ticker):
+            try:
+                return yf.Ticker(ticker).info.get('marketCap', 1e9)
+            except:
+                return 1e9
+
+        market_caps = pd.Series({ticker: get_market_cap(ticker) for ticker in data.columns})
         market_caps = market_caps / market_caps.sum()
 
         # Portfolio creation
