@@ -231,7 +231,8 @@ if st.button('Run Analysis'):
             
             # Convert the summary table to a DataFrame for better presentation
             summary_df = pd.read_html(factor_model.summary().tables[1].as_html(), header=0, index_col=0)[0]
-            st.dataframe(summary_df)
+            if st.button("Click here to view factor analysis"):
+                st.dataframe(summary_df)
 
         # Bootstrap Analysis
         st.header('Bootstrap Analysis')
