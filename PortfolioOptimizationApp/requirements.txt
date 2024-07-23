@@ -2,9 +2,10 @@ pandas
 numpy
 yfinance
 datetime
-torch
 streamlit
 pandas_datareader
 PyPortfolioOpt
 scikit-learn
 plotly
+statsmodels
+scipy
