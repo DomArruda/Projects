@@ -251,4 +251,4 @@ if st.button('Run Analysis'):
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
-        st.error("Please check your inputs and try again."
+        st.error("Please check your inputs and try again.")
