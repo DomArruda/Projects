@@ -214,7 +214,7 @@ if st.button('Run Analysis'):
         for name, weights in portfolios.items():
             cumulative_return = (1 + (backtest_returns * weights).sum(axis=1)).cumprod()
             ax.plot(cumulative_return.index, cumulative_return, label=f'{name} ({results[name]["Total Return"]:.2%})')
-        ax.set_title('Portfolio Performance Comparison (2023)')
+        ax.set_title('Portfolio Performance Comparison')
         ax.set_xlabel('Date')
         ax.set_ylabel('Cumulative Return')
         ax.legend()
