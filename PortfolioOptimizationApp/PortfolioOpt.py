@@ -283,5 +283,5 @@ if st.button('Run Analysis'):
         st.dataframe(weight_df)
 
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")d
+        st.error(f"An error occurred: {str(e)}")
         st.error("Please check your inputs and try again.")
