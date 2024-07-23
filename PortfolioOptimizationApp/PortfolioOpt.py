@@ -150,13 +150,13 @@ else:
 st.subheader('Date Range Selection')
 col1, col2 = st.columns(2)
 with col1:
-    analysis_start = st.date_input('Start Date', datetime(2021, 1, 1), key='analysis_start')
-    backtest_start = st.date_input('Start Date', datetime(2023, 1, 1), key='backtest_start')
+    analysis_start = st.date_input('Analysis Start Date', datetime(2021, 1, 1), key='analysis_start')
+    backtest_start = st.date_input('Backtest Start Date', datetime(2023, 1, 1), key='backtest_start')
 
 with col2:
-    st.markdown("**Backtest Period**")
-    analysis_end = st.date_input('End Date', datetime(2022, 12, 31), key='analysis_end')
-    backtest_end = st.date_input('End Date', datetime(2023, 12, 31), key='backtest_end')
+
+    analysis_end = st.date_input('Analysis End Date', datetime(2022, 12, 31), key='analysis_end')
+    backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31), key='backtest_end')
 
 if st.button('Run Analysis') and len(stock_tickers) > 0:
     try:
