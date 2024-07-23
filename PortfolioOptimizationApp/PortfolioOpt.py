@@ -1,32 +1,126 @@
 # -*- coding: utf-8 -*-
-
-import pandas as pd
-import yfinance as yf
-import plotly.express as plx
-import datetime
-import time
-import requests
-import io
-import torch
 import streamlit as st
+import pandas as pd
+import numpy as np
+import yfinance as yf
+import matplotlib.pyplot as plt
+import plotly.express as px
+from datetime import datetime, timedelta
+from sklearn.decomposition import PCA
+from scipy.optimize import minimize
+from scipy import stats
+import statsmodels.api as sm
 import pandas_datareader as pdr
-from datetime import datetime
-import pypfopt
-from pypfopt.expected_returns import mean_historical_return
-from pypfopt.risk_models import CovarianceShrinkage
-from pypfopt.efficient_frontier import EfficientFrontier
-from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
-from pypfopt import HRPOpt
-from pypfopt.efficient_frontier import EfficientCVaR
+import warnings
 from PIL import Image
-from random import randint
-from pypfopt import HRPOpt
-import numpy as np 
+
+warnings.filterwarnings('ignore')
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
 st.title('Python Portfolio Optimization')
 st.image(image,caption = '', use_column_width = True)
     
-    
+def fetch_factor_data(start_date, end_date):
+    ff_factors = pdr.get_data_famafrench('F-F_Research_Data_Factors_daily', start=start_date, end=end_date)[0]
+    ff_factors.index = pd.to_datetime(ff_factors.index)
+    ff_factors = ff_factors / 100  # Convert to decimal format
+    return ff_factors
+
+def calculate_performance(weights, returns, risk_free_rate):
+    portfolio_return = (returns * weights).sum(axis=1)
+    excess_return = portfolio_return - risk_free_rate
+    trading_days = len(returns)
+    annualization_factor = np.sqrt(252 / trading_days)
+
+    total_return = (1 + portfolio_return).prod() - 1
+    annualized_return = (1 + total_return) ** (252 / trading_days) - 1
+    volatility = portfolio_return.std() * np.sqrt(252)
+    sharpe_ratio = excess_return.mean() / excess_return.std() * annualization_factor
+    sortino_ratio = excess_return.mean() / excess_return[excess_return < 0].std() * annualization_factor
+    max_drawdown = calculate_max_drawdown(portfolio_return)
+    calmar_ratio = annualized_return / abs(max_drawdown)
+
+    return {
+        'Total Return': total_return,
+        'Annualized Return': annualized_return,
+        'Volatility': volatility,
+        'Sharpe Ratio': sharpe_ratio,
+        'Sortino Ratio': sortino_ratio,
+        'Max Drawdown': max_drawdown,
+        'Calmar Ratio': calmar_ratio
+    }
+
+def calculate_max_drawdown(returns):
+    cumulative_returns = (1 + returns).cumprod()
+    peak = cumulative_returns.expanding(min_periods=1).max()
+    drawdown = (cumulative_returns / peak) - 1
+    return drawdown.min()
+
+def minimum_variance_portfolio(returns):
+    n = returns.shape[1]
+    args = (returns,)
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bounds = tuple((0, 1) for _ in range(n))
+    result = minimize(lambda weights, returns: (returns * weights).sum(axis=1).std() * np.sqrt(252),
+                      n*[1./n,], args=args, method='SLSQP', bounds=bounds, constraints=constraints)
+    return result.x
+
+def maximum_sharpe_ratio_portfolio(returns, risk_free_rate):
+    n = returns.shape[1]
+    args = (returns, risk_free_rate)
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bounds = tuple((0, 1) for _ in range(n))
+    result = minimize(lambda weights, returns, rf: -((returns * weights).sum(axis=1).mean() - rf) /
+                      ((returns * weights).sum(axis=1).std() * np.sqrt(252)),
+                      n*[1./n,], args=args, method='SLSQP', bounds=bounds, constraints=constraints)
+    return result.x
+
+def risk_parity_portfolio(returns):
+    n = returns.shape[1]
+    target_risk = 1/n
+    def objective(weights):
+        portfolio_vol = (returns * weights).sum(axis=1).std() * np.sqrt(252)
+        asset_contribs = weights * (returns.cov() * 252).dot(weights) / portfolio_vol
+        return np.sum((asset_contribs - target_risk)**2)
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bounds = tuple((0, 1) for _ in range(n))
+    result = minimize(objective, n*[1./n,], method='SLSQP', bounds=bounds, constraints=constraints)
+    return result.x
+
+def black_litterman_portfolio(returns, market_caps, risk_aversion=2.5, tau=0.05):
+    Sigma = returns.cov() * 252
+    Pi = risk_aversion * Sigma.dot(market_caps)
+    weights = np.linalg.inv(tau * Sigma + Sigma).dot(tau * Sigma.dot(market_caps) + Pi)
+    return weights / weights.sum()
+
+def momentum_portfolio(returns, lookback=12):
+    momentum = returns.iloc[-lookback:].mean()
+    weights = momentum / momentum.sum()
+    return weights
+
+def factor_analysis(portfolio_returns, factor_returns):
+    aligned_data = pd.concat([portfolio_returns, factor_returns], axis=1).dropna()
+    portfolio_returns = aligned_data.iloc[:, 0]
+    factor_returns = aligned_data.iloc[:, 1:]
+    X = sm.add_constant(factor_returns)
+    model = sm.OLS(portfolio_returns, X).fit()
+    return model
+
+def bootstrap_sharpe_ratio(returns, weights, num_simulations=10000):
+    portfolio_returns = (returns * weights).sum(axis=1)
+    sharpe_ratios = []
+    for _ in range(num_simulations):
+        sample = np.random.choice(portfolio_returns, size=len(portfolio_returns), replace=True)
+        sharpe = np.sqrt(252) * sample.mean() / sample.std()
+        sharpe_ratios.append(sharpe)
+    return np.mean(sharpe_ratios), np.percentile(sharpe_ratios, [2.5, 97.5])
+
+def stress_test(weights, returns, scenarios):
+    portfolio_returns = (returns * weights).sum(axis=1)
+    results = {}
+    for name, scenario in scenarios.items():
+        stressed_returns = portfolio_returns * scenario
+        results[name] = stressed_returns.sum()
+    return results    
     
 from datetime import date
 from datetime import timedelta
@@ -45,344 +139,111 @@ def create_portfolio(tick_list, start_date, end_date, future_date = None):
   end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
 
+st.title('Advanced Portfolio Optimization')
 
+# Input section
+st.header('Portfolio Setup')
+ticker_input = st.text_input('Enter stock tickers (comma-separated)', 'WMT, DIS, KO, NFLX, MTCH, TGT, OXY, TDG, NOC, HWM, QCOM, META, AMZN')
+stock_tickers = [stock.strip() for stock in ticker_input.split(",")]
 
-  df_list = []
+col1, col2 = st.columns(2)
+with col1:
+    analysis_start = st.date_input('Analysis Start Date', datetime(2021, 1, 1))
+    analysis_end = st.date_input('Analysis End Date', datetime(2022, 12, 31))
+with col2:
+    backtest_start = st.date_input('Backtest Start Date', datetime(2023, 1, 1))
+    backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31))
 
-  if future_date != None:
-    for i in tick_list: 
-      stock = yf.download(i, start = start_date, end = future_date, progress = False)
-      if len(stock) == 0: 
-        continue 
+if st.button('Run Analysis'):
+    # Data fetching and preprocessing
+    data = yf.download(stock_tickers, start=analysis_start, end=backtest_end)['Adj Close']
+    data = data.dropna(axis=1)
+    returns = data.pct_change().dropna()
 
-      else: 
-        stock.rename( columns = {'Close': i}, inplace= True)
-        stock = stock[i]
-        df_list.append(stock)
+    analysis_returns = returns.loc[analysis_start:analysis_end]
+    backtest_returns = returns.loc[backtest_start:backtest_end]
 
-    portfolio_list = pd.concat(df_list, axis = 1)
-    portfolio_list.dropna(inplace= True)
-    portfolio = portfolio_list
+    risk_free_rate = yf.Ticker("^TNX").history(start=analysis_start, end=backtest_end)['Close'].iloc[-1] / 100 / 252
 
-    og_portfolio = portfolio
-    portfolio = og_portfolio[og_portfolio.index <= end_date]
-    portfolio_end = og_portfolio[og_portfolio.index >= end_date]
+    market_caps = pd.Series({ticker: yf.Ticker(ticker).info['marketCap'] for ticker in data.columns})
+    market_caps = market_caps / market_caps.sum()
 
-    return (portfolio, portfolio_end)
+    # Portfolio creation
+    portfolios = {
+        'Eigenportfolio': pd.Series(PCA(n_components=1).fit(analysis_returns).components_[0], index=data.columns),
+        'Equal-Weight': pd.Series(1/len(data.columns), index=data.columns),
+        'Minimum Variance': pd.Series(minimum_variance_portfolio(analysis_returns), index=data.columns),
+        'Maximum Sharpe Ratio': pd.Series(maximum_sharpe_ratio_portfolio(analysis_returns, risk_free_rate), index=data.columns),
+        'Risk Parity': pd.Series(risk_parity_portfolio(analysis_returns), index=data.columns),
+        'Black-Litterman': pd.Series(black_litterman_portfolio(analysis_returns, market_caps), index=data.columns),
+        'Momentum': momentum_portfolio(analysis_returns)
+    }
 
-  else:
-    for i in tick_list: 
-      stock = yf.download(i, start = start_date, end = end_date, progress = False)
-      if len(stock) == 0: 
-        continue 
+    for name, weights in portfolios.items():
+        portfolios[name] = weights / weights.sum()
 
-      else: 
-        stock.rename( columns = {'Close': i}, inplace= True)
-        stock = stock[i]
-        df_list.append(stock)
+    results = {name: calculate_performance(weights, backtest_returns, risk_free_rate) for name, weights in portfolios.items()}
 
-      
+    # Plotting
+    st.header('Portfolio Performance Comparison')
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for name, weights in portfolios.items():
+        cumulative_return = (1 + (backtest_returns * weights).sum(axis=1)).cumprod()
+        ax.plot(cumulative_return.index, cumulative_return, label=f'{name} ({results[name]["Total Return"]:.2%})')
+    ax.set_title('Portfolio Performance Comparison (2023)')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Cumulative Return')
+    ax.legend()
+    ax.grid(True)
+    st.pyplot(fig)
 
-    portfolio_list = pd.concat(df_list, axis = 1)
-    print(portfolio_list)
-    portfolio_list.dropna(inplace= True)
-    portfolio = portfolio_list
+    # Factor Analysis
+    st.header('Factor Analysis')
+    factor_data = fetch_factor_data(backtest_start, backtest_end)
+    for name, weights in portfolios.items():
+        portfolio_returns = (backtest_returns * weights).sum(axis=1)
+        factor_model = factor_analysis(portfolio_returns, factor_data)
+        st.subheader(f'{name}')
+        st.write(factor_model.summary().tables[1])
 
-    return portfolio
+    # Bootstrap Analysis
+    st.header('Bootstrap Analysis')
+    for name, weights in portfolios.items():
+        mean_sharpe, ci = bootstrap_sharpe_ratio(backtest_returns, weights)
+        st.subheader(f'{name}')
+        st.write(f"Mean Sharpe Ratio: {mean_sharpe:.4f}")
+        st.write(f"95% Confidence Interval: ({ci[0]:.4f}, {ci[1]:.4f})")
 
+    # Stress Testing
+    st.header('Stress Test Results')
+    scenarios = {
+        'Market Crash': 0.7,
+        'Economic Boom': 1.3,
+        'High Volatility': 1.0
+    }
+    stress_test_results = {name: stress_test(weights, backtest_returns, scenarios) for name, weights in portfolios.items()}
+    for name, scenario_results in stress_test_results.items():
+        st.subheader(f'{name}')
+        for scenario, result in scenario_results.items():
+            st.write(f"  {scenario}: {result:.2%}")
 
+    # Summary statistics
+    st.header('Portfolio Performance Summary')
+    for name, result in results.items():
+        st.subheader(f'{name}')
+        for metric, value in result.items():
+            st.write(f"  {metric}: {value:.4f}")
 
+    # Best strategy
+    best_strategy = max(results, key=lambda x: results[x]['Sharpe Ratio'])
+    st.header('Best Strategy')
+    st.write(f"Best Strategy: {best_strategy}")
+    st.write(f"Best Strategy Sharpe Ratio: {results[best_strategy]['Sharpe Ratio']:.4f}")
+    st.write(f"Best Strategy Total Return: {results[best_strategy]['Total Return']:.4%}")
 
-#Mean Variance Optimization
-
-
-def MVO_opt(portfolio):
-   
-    mu = mean_historical_return(portfolio)
-    S = CovarianceShrinkage(portfolio).ledoit_wolf()
-    
-    ef = EfficientFrontier(mu, S)
-       
-    weights = ef.max_sharpe()
-    cleaned_weights = ef.clean_weights()
-    
-    cleaned_weights = pd.DataFrame().append(dict(cleaned_weights), ignore_index = True).T.reset_index()
-    cleaned_weights.columns = ['Ticker', 'Allocation']
-    st.text('')
-    st.markdown('**Portfolio Performance**')
-    st.write('Expected Annual Return (Discrete Allocation):           ',str(round(ef.portfolio_performance()[0] * 100, 3)) + '%')
-    st.write('Annual Volatility:           ',str(round(ef.portfolio_performance()[1] * 100, 3)) + '%')
-    st.write('Sharpe Ratio:           ',str(round(ef.portfolio_performance()[2], 3)))
-    st.text('')
-    st.text('')
-    
-    
-    
-    latest_prices = get_latest_prices(portfolio)
-    da = DiscreteAllocation(weights, latest_prices, total_portfolio_value=port_value)
-    allocation, leftover = da.greedy_portfolio()
-    allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
-    allocation.columns = ['Ticker', 'Number of Stocks']
-    
-    st.markdown("**Discrete stock allocation:**")
-    st.text('')
-    allocation.sort_values(by = ['Number of Stocks'], inplace = True)
-    st.dataframe(allocation)
-    st.text('')
-    st.write("Funds remaining (MVO): ${:.2f}".format(leftover))
-    
-    
-    st.markdown("**Non-Discrete Allocation**") 
-    st.dataframe(cleaned_weights)
-    #have to fix from here
-   
-
-    
-
-
-# %%
-
-#Hierarchal Risk Parity:
-def HRP(portfolio, port_value, future_portfolio = None):
-  mu = mean_historical_return(portfolio)
-  S = CovarianceShrinkage(portfolio).ledoit_wolf()
-  returns = portfolio.pct_change().dropna()
-
-  hrp = HRPOpt(returns)
-  hrp_weights = hrp.optimize()
-
-  hrp.portfolio_performance(verbose=True)
-  st.text('')
-  st.header('Expected Portfolio Performance')
-  st.write('Expected Annual Return (Discrete Allocation):           ',str(round(hrp.portfolio_performance()[0] * 100, 3)) + '%')
-  st.write('Annual Volatility:           ',str(round(hrp.portfolio_performance()[1] * 100, 3)) + '%')
-  st.write('Sharpe Ratio:           ',str(round(hrp.portfolio_performance()[2], 3)))
-  st.text('')
-  st.text('')
-
-
-
-
-  latest_prices = get_latest_prices(portfolio)
-  da_hrp = DiscreteAllocation(hrp_weights, latest_prices, total_portfolio_value= port_value)
-  allocation, leftover = da_hrp.greedy_portfolio()
-  allocation_dict = allocation
-  allocation = pd.DataFrame( tuple(allocation.items())) 
-  allocation.columns = ['Ticker', 'Number of Stocks']
-  print("\nDiscrete allocation (HRP):", allocation)
-  print("\nFunds remaining (HRP): ${:.2f}".format(leftover))
-
-
-  st.header("Discrete stock allocation:")
-  st.text('')
-  allocation.sort_values(by = ['Number of Stocks'], inplace = True)
-  st.dataframe(allocation)
-  st.text('')
-  st.write("\nFunds remaining (HRP): ${:.2f}".format(leftover))
-    
-  st.text('\n\n')
-  st.text('')
-
-  if future_portfolio is not None: 
-    discrete_purchases = {stock_name:(portfolio[stock_name].iloc[-1] * discrete_allocation)  for stock_name, discrete_allocation in allocation_dict.items() if stock_name in list(portfolio.columns)}
-    initial_value_DA = sum(discrete_purchases.values())
-    discrete_end_values = {stock_name: discrete_purchases[stock_name] * (future_portfolio[stock_name].iloc[-1]/portfolio[stock_name].iloc[-1]) for stock_name in discrete_purchases.keys() if stock_name in list(portfolio.columns) }
-    end_value_DA = sum(discrete_end_values.values())
-    percent_change_DA = ((end_value_DA - initial_value_DA)/initial_value_DA) * 100 
-    st.text('')
-    st.header("Discrete Allocation Backtest")
-    st.markdown(f'\n\n**Portfolio By End of Test Date (DA): ${end_value_DA:.0f}**')
-    st.markdown(f'\n**Percent Change: (DA) {percent_change_DA:.2f}%**')
-    
-  st.text('')
-  st.text('')
-  st.text('')
-  st.text('')
-  st.header("Non-Discrete Allocation") 
-
-
-
-
-  hrp_weights_df = pd.DataFrame(tuple(hrp_weights.items()), columns = ['Ticker', 'Percent Allocation'])
-  ND_weights = hrp_weights_df.copy()
-  ND_weights_og = dict(ND_weights)
-  ND_weights['Latest Prices'] = list(latest_prices) 
-  ND_weights['Number of Stocks'] = (ND_weights['Percent Allocation'] * port_value)/ND_weights['Latest Prices']
-  ND_weights.drop(['Percent Allocation', 'Latest Prices'] , axis = 1, inplace = True)
-  ND_weights.sort_values(by = ['Number of Stocks'] , inplace = True)
-    
-  st.dataframe(ND_weights)
-  st.text('')
-  st.text('')
-
-
-  if (future_portfolio is not None):
-
-    initialInvestments = { stock_names: proportions * port_value for stock_names, proportions in  hrp_weights.items()}
-    end_port_value = sum([   (future_portfolio[stock_names].iloc[-1]/portfolio[stock_names].iloc[-1])*  initialInvestments[stock_names] for  stock_names in hrp_weights.keys() ])
-    percent_change =  ((end_port_value - port_value)/port_value) * 100
-    st.header("Non-Discrete Allocation Backtest")
-    st.text('')
-    st.markdown(f'\n\n**Portfolio By End of Test Date: ${end_port_value:.0f}**')
-    st.markdown(f'\n**Percent Change: {percent_change:.2f}%**')
-    st.text('')
-
-
-     
-
-
-#Mean Conditional Value at Risk
-
-
-
-def MCV(portfolio): 
-
-    mu = mean_historical_return(portfolio)
-    S = CovarianceShrinkage(portfolio).ledoit_wolf()
-    returns = portfolio.pct_change().dropna()
-    ef_cvar = EfficientCVaR(mu, S)
-    cvar_weights = ef_cvar.min_cvar()
-    cleaned_weights = ef_cvar.clean_weights()
-    ef_cvar.portfolio_performance(verbose = True)
-    st.write('Expected Annual Return (Discrete Allocation):           ',str(round(ef_cvar.portfolio_performance()[0] * 100, 3)) + '%')
-    st.write('Annual Volatility:           ',str(round(ef_cvar.portfolio_performance()[1] * 100, 3)) + '%')
-    
-   
-    
-    latest_prices = get_latest_prices(portfolio)
-    da_cvar = DiscreteAllocation(cvar_weights, latest_prices, total_portfolio_value=port_value)
-    
-    allocation, leftover = da_cvar.greedy_portfolio()
-    allocation = pd.DataFrame().append(dict(allocation), ignore_index = True).T.reset_index()
-    allocation.columns = ['Ticker', 'Number of stocks']
-    st.write("Discrete allocation:")
-    st.text('')
-    st.dataframe(allocation)
-    st.write(("Funds remaining: ${:.2f}".format(leftover)))
-    st.text('')
-    
-def hedgeify(portfolio, corr, lower_bound, upper_bound):
-  corr_matrix = portfolio.corr(method = corr)
-  #.rename_axis(None).rename_axis(None, axis = 1)
-  correlationData = pd.DataFrame(corr_matrix.stack().reset_index()).rename(columns = {'level_0': 'Stock1', 'level_1': 'Stock2', 0: 'Correlation'}) 
-  correlationData['Same Stock'] = correlationData['Stock1'] == correlationData['Stock2']
-  correlationData = correlationData[ correlationData['Same Stock'] != True]
-
-  
-  correlationData = correlationData[ (correlationData['Correlation'] >= lower_bound) & (correlationData['Correlation'] <= upper_bound)]
-
-  allStocks = list(set(correlationData['Stock1'].to_list() + correlationData['Stock2'].to_list()))
-
-
-  if 'Date' in list(portfolio.columns): 
-    portfolio = portfolio[allStocks + 'Date']
-  else: 
-    portfolio= portfolio[allStocks]
-
-  return portfolio 
-
-#%%
-
-ticker_str = st.text_input('Input your list of tickers. Format must follow: "Ticker1, Ticker2, Ticker3..."')
-stock_button = st.button('Not sure what to pick? Download S&P 500 stock tickers')
-if stock_button != False: 
-    URL = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    ticker_list = pd.read_html(URL)[0]['Symbol'].tolist()
-    st.markdown('**Tickers for S&P 500**')
-    st.text('')
-    st.markdown('**Click on the arrow to view stock tickers. After, click on top clipboard to copy all ticker symbols**')
-    st.write(ticker_list)
-stock_list = [i.strip() for i in list(ticker_str.split(','))]
-stock_list = [i.strip('[') for i in stock_list] 
-stock_list = [i.strip(']')  for i in stock_list] 
-stock_list = [i.strip('"') for i in stock_list] 
-stock_list = [i.replace('"', '') for i in stock_list] 
-stock_list = [i.upper() for i in stock_list]
-selected_stocks = st.multiselect('Chosen Stocks: ', options  = stock_list, default = stock_list)
-
-
-
-start_date = st.text_input('Write your stock start date in month/day/year format', (datetime.today() - timedelta(days = 2 * 365 + 1)).strftime('%m/%d/%Y'))
-end_date = st.text_input('Write your stock end date in month/day/year format', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
-future_date = st.text_input('Write a backtest date (after end date) in month/day/year format (OPTIONAL)', (datetime.today() - timedelta(days = 1)).strftime('%m/%d/%Y'))
-                        
-
-
-if ("" not in selected_stocks)  and (start_date != False) and (end_date != False):
-    try:
-        future_portfolio = None
-        if (future_date == False) or (future_date == '') or (end_date == future_date): 
-            future_date = None 
-
-        portfolio = create_portfolio(selected_stocks, start_date, end_date, future_date)
-        if len(portfolio) == 2 and not isinstance(portfolio, pd.DataFrame):
-            portfolio, future_portfolio = portfolio 
-        
-        #st.write(type(portfolio))
-        if portfolio is None:
-            st.text('')
-            st.write('Invalid Stock Selection')
-            st.stop()
-            
-        #portfolio.to_csv("portfolio.csv")
-        #portfolio = pd.read_csv("portfolio.csv")    
-        #portfolio.index = portfolio['Date']
-        #portfolio.drop(['Date'], inplace = True, axis = 1)
-        st.write(portfolio)
-        portfolioData = portfolio.to_csv(index = True).encode('utf-8')
-        st.download_button('Click Here To Download Stock Data', 
-                       portfolioData, 'StockData.csv')
-        
-        correlation_types =   ['Pearson', 'Kendall', 'Spearman']
-    
-        corr_option = st.selectbox( 'Pick Correlation Method: ',correlation_types)
-          
-  
-        fig = plx.imshow(portfolio.corr(method = corr_option.lower()).round(2), title = f'Stock Correlations - {corr_option.title()}:', text_auto = True)
-        st.plotly_chart(fig)
-     
-        correlation_values = np.arange(start = -1.00, stop = 1.01, step = 0.01)
-        correlation_values = [round(i,2) for i in correlation_values]
-        lower_bound, upper_bound = ( st.select_slider('Filter Portfolio By Correlation Range', options = correlation_values,
-                         value = (min(correlation_values), max(correlation_values))))
-        lower_bound, upper_bound = float(lower_bound), float(upper_bound)
-         
-        if lower_bound != min(correlation_values) or upper_bound != max(correlation_values):
-            portfolio = hedgeify(portfolio, corr = corr_option.lower(), lower_bound = lower_bound, upper_bound= upper_bound) 
-            st.write(portfolio)
-            portfolioData = portfolio.to_csv(index = True).encode('utf-8')
-            st.download_button('Click Here To Download Filtered Stock Data', 
-                           portfolioData, 'StockData.csv')
-            fig = plx.imshow(portfolio.corr(method = corr_option.lower()).round(2), title = f'Filtered Portfolio Stock Correlations - {corr_option.title()}:', text_auto = True)
-            st.plotly_chart(fig)
-            
-            
-       
-        
-        
-        port_value = st.text_input('What amount do you plan on investing in your portfolio?')
-        if port_value == '' or port_value is None: 
-            st.stop()
-        else:
-            port_value = float(port_value)
-            opt_list = ['None Selected', 'Hierarchical Risk Parity', 'Mean Conditional Value at Risk'] 
-            choice = st.selectbox('Choose Which Optimization Technique You Would Like To Use: ', opt_list)
-            
-            #'Mean Variance Optimization' - Need to fix this one up...
-            if choice == opt_list[1]: 
-                try:
-                    HRP(portfolio, port_value, future_portfolio)
-                except Exception as e: 
-                    st.text(e)
-                    st.text('Error Occured: Please try again')
-            elif choice == opt_list[2]:
-                try:
-                    MCV(portfolio)
-                except Exception as e_1: 
-                    st.text(e_)
-                    #st.text('Error Occured - Please try again')
-    except Exception as e_2 : 
-            st.text("An error has occurred - Please try again and check your inputs." )
-      
-else: 
-    st.stop()
+    st.subheader('Best Strategy Weights')
+    best_weights = portfolios[best_strategy]
+    weight_df = pd.DataFrame(best_weights.sort_values(ascending=False)).reset_index()
+    weight_df.columns = ['Stock', 'Weight']
+    weight_df['Weight'] = weight_df['Weight'].apply(lambda x: f"{x:.4f}")
+    st.table(weight_df)
