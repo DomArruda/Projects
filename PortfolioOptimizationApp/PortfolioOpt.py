@@ -30,13 +30,14 @@ def calculate_performance(weights, returns, risk_free_rate):
     portfolio_return = (returns * weights).sum(axis=1)
     excess_return = portfolio_return - risk_free_rate
     trading_days = len(returns)
+    years = trading_days / 252  # Calculate the fraction of a year
     annualization_factor = np.sqrt(252 / trading_days)
 
     total_return = (1 + portfolio_return).prod() - 1
-    annualized_return = (1 + total_return) ** (252 / trading_days) - 1
-    volatility = portfolio_return.std() * np.sqrt(252)
-    sharpe_ratio = excess_return.mean() / excess_return.std() * annualization_factor
-    sortino_ratio = excess_return.mean() / excess_return[excess_return < 0].std() * annualization_factor
+    annualized_return = (1 + total_return) ** (1 / years) - 1
+    volatility = portfolio_return.std() * np.sqrt(252 / trading_days)
+    sharpe_ratio = excess_return.mean() / excess_return.std() * np.sqrt(252 / trading_days)
+    sortino_ratio = excess_return.mean() / excess_return[excess_return < 0].std() * np.sqrt(252 / trading_days)
     max_drawdown = calculate_max_drawdown(portfolio_return)
     calmar_ratio = annualized_return / abs(max_drawdown)
 
@@ -49,7 +50,6 @@ def calculate_performance(weights, returns, risk_free_rate):
         'Max Drawdown': max_drawdown,
         'Calmar Ratio': calmar_ratio
     }
-
 def calculate_max_drawdown(returns):
     cumulative_returns = (1 + returns).cumprod()
     peak = cumulative_returns.expanding(min_periods=1).max()
@@ -60,10 +60,11 @@ def minimum_variance_portfolio(returns):
     if isinstance(returns, pd.Series):
         returns = returns.to_frame()
     n = returns.shape[1]
+    trading_days = len(returns)
     args = (returns,)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     bounds = tuple((0, 1) for _ in range(n))
-    result = minimize(lambda weights, returns: (returns * weights).sum(axis=1).std() * np.sqrt(252),
+    result = minimize(lambda weights, returns: (returns * weights).sum(axis=1).std() * np.sqrt(252 / trading_days),
                       n*[1./n,], args=args, method='SLSQP', bounds=bounds, constraints=constraints)
     return pd.Series(result.x, index=returns.columns)
 
@@ -71,11 +72,12 @@ def maximum_sharpe_ratio_portfolio(returns, risk_free_rate):
     if isinstance(returns, pd.Series):
         returns = returns.to_frame()
     n = returns.shape[1]
+    trading_days = len(returns)
     args = (returns, risk_free_rate)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     bounds = tuple((0, 1) for _ in range(n))
     result = minimize(lambda weights, returns, rf: -((returns * weights).sum(axis=1).mean() - rf) /
-                      ((returns * weights).sum(axis=1).std() * np.sqrt(252)),
+                      ((returns * weights).sum(axis=1).std() * np.sqrt(252 / trading_days)),
                       n*[1./n,], args=args, method='SLSQP', bounds=bounds, constraints=constraints)
     return pd.Series(result.x, index=returns.columns)
 
@@ -83,10 +85,11 @@ def risk_parity_portfolio(returns):
     if isinstance(returns, pd.Series):
         returns = returns.to_frame()
     n = returns.shape[1]
+    trading_days = len(returns)
     target_risk = 1/n
     def objective(weights):
-        portfolio_vol = (returns * weights).sum(axis=1).std() * np.sqrt(252)
-        asset_contribs = weights * (returns.cov() * 252).dot(weights) / portfolio_vol
+        portfolio_vol = (returns * weights).sum(axis=1).std() * np.sqrt(252 / trading_days)
+        asset_contribs = weights * (returns.cov() * (252 / trading_days)).dot(weights) / portfolio_vol
         return np.sum((asset_contribs - target_risk)**2)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     bounds = tuple((0, 1) for _ in range(n))
@@ -96,7 +99,8 @@ def risk_parity_portfolio(returns):
 def black_litterman_portfolio(returns, market_caps, risk_aversion=2.5, tau=0.05):
     if isinstance(returns, pd.Series):
         returns = returns.to_frame()
-    Sigma = returns.cov() * 252
+    trading_days = len(returns)
+    Sigma = returns.cov() * (252 / trading_days)
     Pi = risk_aversion * Sigma.dot(market_caps)
     weights = np.linalg.inv(tau * Sigma + Sigma).dot(tau * Sigma.dot(market_caps) + Pi)
     return pd.Series(weights / weights.sum(), index=returns.columns)
@@ -118,10 +122,11 @@ def factor_analysis(portfolio_returns, factor_returns):
 
 def bootstrap_sharpe_ratio(returns, weights, num_simulations=10000):
     portfolio_returns = (returns * weights).sum(axis=1)
+    trading_days = len(returns)
     sharpe_ratios = []
     for _ in range(num_simulations):
         sample = np.random.choice(portfolio_returns, size=len(portfolio_returns), replace=True)
-        sharpe = np.sqrt(252) * sample.mean() / sample.std()
+        sharpe = np.sqrt(252 / trading_days) * sample.mean() / sample.std()
         sharpe_ratios.append(sharpe)
     return np.mean(sharpe_ratios), np.percentile(sharpe_ratios, [2.5, 97.5])
 
