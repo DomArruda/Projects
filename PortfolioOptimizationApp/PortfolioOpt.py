@@ -13,6 +13,7 @@ import statsmodels.api as sm
 import pandas_datareader as pdr
 import warnings
 from PIL import Image
+import pytz
 
 warnings.filterwarnings('ignore')
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
@@ -21,7 +22,7 @@ st.image(image, caption='', use_column_width=True)
 
 def fetch_factor_data(start_date, end_date):
     ff_factors = pdr.get_data_famafrench('F-F_Research_Data_Factors_daily', start=start_date, end=end_date)[0]
-    ff_factors.index = pd.to_datetime(ff_factors.index)
+    ff_factors.index = pd.to_datetime(ff_factors.index).tz_localize(None)  # Ensure tz-naive
     ff_factors = ff_factors / 100  # Convert to decimal format
     return ff_factors
 
@@ -148,26 +149,34 @@ with col2:
     analysis_end = st.date_input('Analysis End Date', datetime(2022, 12, 31).date(), key='analysis_end')
     backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31).date(), key='backtest_end')
 
+# Convert date inputs to tz-naive datetime objects
+analysis_start = datetime.combine(analysis_start, datetime.min.time())
+analysis_end = datetime.combine(analysis_end, datetime.min.time())
+backtest_start = datetime.combine(backtest_start, datetime.min.time())
+backtest_end = datetime.combine(backtest_end, datetime.min.time())
+
 if st.button('Run Analysis'):
     try:
         # Data fetching and preprocessing
         @st.cache_data
         def fetch_data(tickers, start, end):
             data = yf.download(tickers, start=start, end=end, progress=False)
+            data.index = data.index.tz_localize(None)  # Remove timezone info
             return data['Adj Close']
 
         data = fetch_data(stock_tickers, analysis_start, backtest_end)
         data = data.dropna(axis=1)
         returns = data.pct_change().dropna()
 
-        analysis_returns = returns.loc[analysis_start:analysis_end]
-        backtest_returns = returns.loc[backtest_start:backtest_end]
+        analysis_returns = returns[(returns.index >= analysis_start) & (returns.index <= analysis_end)]
+        backtest_returns = returns[(returns.index >= backtest_start) & (returns.index <= backtest_end)]
 
         @st.cache_data
         def get_risk_free_rate(start, end):
             try:
                 tnx = yf.Ticker("^TNX")
                 history = tnx.history(start=start, end=end)
+                history.index = history.index.tz_localize(None)  # Remove timezone info
                 return history['Close'].iloc[-1] / 100 / 252
             except Exception as e:
                 st.warning(f"Unable to fetch risk-free rate: {e}. Using default value of 0.02/252.")
