@@ -17,8 +17,8 @@ from PIL import Image
 warnings.filterwarnings('ignore')
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
 st.title('Portfolio Optimization & Analysis')
-st.image(image,caption = '', use_column_width = True)
-    
+st.image(image, caption='', use_column_width=True)
+
 def fetch_factor_data(start_date, end_date):
     ff_factors = pdr.get_data_famafrench('F-F_Research_Data_Factors_daily', start=start_date, end=end_date)[0]
     ff_factors.index = pd.to_datetime(ff_factors.index)
@@ -56,15 +56,19 @@ def calculate_max_drawdown(returns):
     return drawdown.min()
 
 def minimum_variance_portfolio(returns):
+    if isinstance(returns, pd.Series):
+        returns = returns.to_frame()
     n = returns.shape[1]
     args = (returns,)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     bounds = tuple((0, 1) for _ in range(n))
     result = minimize(lambda weights, returns: (returns * weights).sum(axis=1).std() * np.sqrt(252),
                       n*[1./n,], args=args, method='SLSQP', bounds=bounds, constraints=constraints)
-    return result.x
+    return pd.Series(result.x, index=returns.columns)
 
 def maximum_sharpe_ratio_portfolio(returns, risk_free_rate):
+    if isinstance(returns, pd.Series):
+        returns = returns.to_frame()
     n = returns.shape[1]
     args = (returns, risk_free_rate)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
@@ -72,9 +76,11 @@ def maximum_sharpe_ratio_portfolio(returns, risk_free_rate):
     result = minimize(lambda weights, returns, rf: -((returns * weights).sum(axis=1).mean() - rf) /
                       ((returns * weights).sum(axis=1).std() * np.sqrt(252)),
                       n*[1./n,], args=args, method='SLSQP', bounds=bounds, constraints=constraints)
-    return result.x
+    return pd.Series(result.x, index=returns.columns)
 
 def risk_parity_portfolio(returns):
+    if isinstance(returns, pd.Series):
+        returns = returns.to_frame()
     n = returns.shape[1]
     target_risk = 1/n
     def objective(weights):
@@ -84,15 +90,19 @@ def risk_parity_portfolio(returns):
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     bounds = tuple((0, 1) for _ in range(n))
     result = minimize(objective, n*[1./n,], method='SLSQP', bounds=bounds, constraints=constraints)
-    return result.x
+    return pd.Series(result.x, index=returns.columns)
 
 def black_litterman_portfolio(returns, market_caps, risk_aversion=2.5, tau=0.05):
-    Sigma = returns.cov() * 252 # Erm, what the Sigma?
+    if isinstance(returns, pd.Series):
+        returns = returns.to_frame()
+    Sigma = returns.cov() * 252
     Pi = risk_aversion * Sigma.dot(market_caps)
     weights = np.linalg.inv(tau * Sigma + Sigma).dot(tau * Sigma.dot(market_caps) + Pi)
-    return weights / weights.sum()
+    return pd.Series(weights / weights.sum(), index=returns.columns)
 
 def momentum_portfolio(returns, lookback=12):
+    if isinstance(returns, pd.Series):
+        returns = returns.to_frame()
     momentum = returns.iloc[-lookback:].mean()
     weights = momentum / momentum.sum()
     return weights
@@ -121,22 +131,6 @@ def stress_test(weights, returns, scenarios):
         stressed_returns = portfolio_returns * scenario
         results[name] = stressed_returns.sum()
     return results    
-    
-from datetime import date
-from datetime import timedelta
-
-
-def create_portfolio(tick_list, start_date, end_date, future_date = None): 
-  if '-' in start_date: 
-    start_date.replace('-', '/')
-  if '-' in end_date: 
-    end_date.replace('-', '/')
-  if future_date != None:
-    future_date.replace('-', '/')
-    future_date = datetime.strptime(future_date, '%m/%d/%Y') 
-
-  start_date = datetime.strptime(start_date, '%m/%d/%Y')
-  end_date = datetime.strptime(end_date, '%m/%d/%Y')
 
 # Input section
 st.header('Portfolio Setup')
@@ -151,7 +145,6 @@ with col1:
     backtest_start = st.date_input('Backtest Start Date', datetime(2023, 1, 1).date(), key='backtest_start')
 
 with col2:
-
     analysis_end = st.date_input('Analysis End Date', datetime(2022, 12, 31).date(), key='analysis_end')
     backtest_end = st.date_input('Backtest End Date', datetime(2023, 12, 31).date(), key='backtest_end')
 
@@ -190,16 +183,17 @@ if st.button('Run Analysis'):
                 return 1e9
 
         market_caps = pd.Series({ticker: get_market_cap(ticker) for ticker in data.columns})
+        market_caps = market_caps[data.columns]
         market_caps = market_caps / market_caps.sum()
 
         # Portfolio creation
         portfolios = {
             'Eigenportfolio': pd.Series(PCA(n_components=1).fit(analysis_returns).components_[0], index=data.columns),
             'Equal-Weight': pd.Series(1/len(data.columns), index=data.columns),
-            'Minimum Variance': pd.Series(minimum_variance_portfolio(analysis_returns), index=data.columns),
-            'Maximum Sharpe Ratio': pd.Series(maximum_sharpe_ratio_portfolio(analysis_returns, risk_free_rate), index=data.columns),
-            'Risk Parity': pd.Series(risk_parity_portfolio(analysis_returns), index=data.columns),
-            'Black-Litterman': pd.Series(black_litterman_portfolio(analysis_returns, market_caps), index=data.columns),
+            'Minimum Variance': minimum_variance_portfolio(analysis_returns),
+            'Maximum Sharpe Ratio': maximum_sharpe_ratio_portfolio(analysis_returns, risk_free_rate),
+            'Risk Parity': risk_parity_portfolio(analysis_returns),
+            'Black-Litterman': black_litterman_portfolio(analysis_returns, market_caps),
             'Momentum': momentum_portfolio(analysis_returns)
         }
 
@@ -221,18 +215,16 @@ if st.button('Run Analysis'):
         ax.grid(True)
         st.pyplot(fig)
 
-        show_factor_analysis = True # need to fix this later...
-        if show_factor_analysis:
-            st.header('Factor Analysis')
-            factor_data = fetch_factor_data(backtest_start, backtest_end)
-            for name, weights in portfolios.items():
-                st.subheader(f'{name}')
-                portfolio_returns = (backtest_returns * weights).sum(axis=1)
-                factor_model = factor_analysis(portfolio_returns, factor_data)
-                
-                # Convert the summary table to a DataFrame for better presentation
-                summary_df = pd.read_html(factor_model.summary().tables[1].as_html(), header=0, index_col=0)[0]
-                st.dataframe(summary_df)
+        st.header('Factor Analysis')
+        factor_data = fetch_factor_data(backtest_start, backtest_end)
+        for name, weights in portfolios.items():
+            st.subheader(f'{name}')
+            portfolio_returns = (backtest_returns * weights).sum(axis=1)
+            factor_model = factor_analysis(portfolio_returns, factor_data)
+            
+            # Convert the summary table to a DataFrame for better presentation
+            summary_df = pd.read_html(factor_model.summary().tables[1].as_html(), header=0, index_col=0)[0]
+            st.dataframe(summary_df)
 
         # Bootstrap Analysis
         st.header('Bootstrap Analysis')
