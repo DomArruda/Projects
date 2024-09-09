@@ -271,18 +271,41 @@ if st.button('Run Analysis'):
         st.dataframe(summary_df)
 
         # Best strategy
-        best_strategy = max(results, key=lambda x: results[x]['Sharpe Ratio'])
         st.header('Best Strategy')
+        best_strategy = max(results, key=lambda x: results[x]['Total Return'])
         st.write(f"Best Strategy: {best_strategy}")
-        st.write(f"Best Strategy Sharpe Ratio: {results[best_strategy]['Sharpe Ratio']:.4f}")
         st.write(f"Best Strategy Total Return: {results[best_strategy]['Total Return']:.4%}")
-
+        st.write(f"Best Strategy Sharpe Ratio: {results[best_strategy]['Sharpe Ratio']:.4f}")
+        
         st.subheader('Best Strategy Weights')
         best_weights = portfolios[best_strategy]
         weight_df = pd.DataFrame(best_weights.sort_values(ascending=False)).reset_index()
         weight_df.columns = ['Stock', 'Weight']
         weight_df['Weight'] = weight_df['Weight'].apply(lambda x: f"{x:.4f}")
         st.dataframe(weight_df)
+
+        st.header('Understanding Factor Analysis')
+        with st.expander("Read more about interpreting factor analysis"):
+            st.write("""
+            Factor analysis helps us understand how different market factors influence portfolio returns. Here's how to interpret the results:
+        
+            1. **Coefficients**: These show the sensitivity of the portfolio to each factor. A positive coefficient means the portfolio tends to move in the same direction as the factor, while a negative coefficient indicates an inverse relationship.
+        
+            2. **t-statistic**: This measures the statistical significance of each factor. Generally, a t-statistic greater than 2 or less than -2 is considered significant.
+        
+            3. **P-value**: This is the probability that the observed relationship between the factor and portfolio returns occurred by chance. A p-value less than 0.05 is typically considered statistically significant.
+        
+            4. **R-squared**: This indicates the proportion of variance in portfolio returns explained by the factors. A higher R-squared suggests that the factors do a better job of explaining portfolio performance.
+        
+            5. **Factors**:
+               - Mkt-RF: Excess return of the market portfolio over the risk-free rate
+               - SMB: Small Minus Big, the return difference between small and large cap stocks
+               - HML: High Minus Low, the return difference between value and growth stocks
+        
+            A significant positive coefficient for Mkt-RF indicates the portfolio tends to move with the market. Significant SMB or HML coefficients suggest exposure to size or value factors, respectively.
+        
+            Remember, while factor analysis provides insights into portfolio behavior, it's based on historical data and may not predict future performance.
+            """)
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
