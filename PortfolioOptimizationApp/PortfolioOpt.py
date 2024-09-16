@@ -175,7 +175,7 @@ if st.button('Run Analysis'):
         data.to_csv("stock_data.csv")
         st.download_button(
         label="Download stock data as CSV",
-        data=csv,
+        data=data,
         file_name="stock_data.csv",
         mime="text/csv",
 )
