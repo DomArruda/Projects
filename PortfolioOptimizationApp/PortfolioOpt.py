@@ -172,6 +172,13 @@ if st.button('Run Analysis'):
         data = fetch_data(stock_tickers, analysis_start, backtest_end)
         data = data.dropna(axis=1)
         returns = data.pct_change().dropna()
+        data.to_csv("stock_data.csv")
+        st.download_button(
+        label="Download stock data as CSV",
+        data=csv,
+        file_name="stock_data.csv",
+        mime="text/csv",
+)
 
         analysis_returns = returns[(returns.index >= analysis_start) & (returns.index <= analysis_end)]
         backtest_returns = returns[(returns.index >= backtest_start) & (returns.index <= backtest_end)]
