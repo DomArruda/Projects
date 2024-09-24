@@ -13,9 +13,6 @@ import (
 	"time"
 
 	"log"
-
-	"github.com/xitongsys/parquet-go-source/local"
-	"github.com/xitongsys/parquet-go/reader"
 )
 
 type DataValue struct {
@@ -1899,69 +1896,71 @@ func ReadCSVStringToDataFrame(csvString string) (*DataFrame, error) {
 
 	return NewDataFrame(data), nil
 }
-func ReadParquetToDataFrame(filename string) (*DataFrame, error) {
-	fr, err := local.NewLocalFileReader(filename)
-	if err != nil {
-		return nil, fmt.Errorf("can't open file: %s", err)
-	}
-	defer fr.Close()
 
-	pr, err := reader.NewParquetReader(fr, nil, 4)
-	if err != nil {
-		return nil, fmt.Errorf("can't create parquet reader: %s", err)
-	}
-	defer pr.ReadStop()
-
-	num := int(pr.GetNumRows())
-	res := make([]map[string]interface{}, num)
-
-	for i := 0; i < num; i++ {
-		row := make(map[string]interface{})
-		if err = pr.Read(&row); err != nil {
-			return nil, fmt.Errorf("can't read row: %s", err)
+/*
+	func ReadParquetToDataFrame(filename string) (*DataFrame, error) {
+		fr, err := local.NewLocalFileReader(filename)
+		if err != nil {
+			return nil, fmt.Errorf("can't open file: %s", err)
 		}
-		res[i] = row
-	}
+		defer fr.Close()
 
-	// Convert the result to DataFrame
-	if len(res) == 0 {
-		return &DataFrame{
-			Columns:   []string{},
-			Data:      [][]DataValue{},
+		pr, err := reader.NewParquetReader(fr, nil, 4)
+		if err != nil {
+			return nil, fmt.Errorf("can't create parquet reader: %s", err)
+		}
+		defer pr.ReadStop()
+
+		num := int(pr.GetNumRows())
+		res := make([]map[string]interface{}, num)
+
+		for i := 0; i < num; i++ {
+			row := make(map[string]interface{})
+			if err = pr.Read(&row); err != nil {
+				return nil, fmt.Errorf("can't read row: %s", err)
+			}
+			res[i] = row
+		}
+
+		// Convert the result to DataFrame
+		if len(res) == 0 {
+			return &DataFrame{
+				Columns:   []string{},
+				Data:      [][]DataValue{},
+				ColumnMap: make(map[string]*Series),
+			}, nil
+		}
+
+		var columns []string
+		for key := range res[0] {
+			columns = append(columns, key)
+		}
+
+		dfData := make([][]DataValue, len(res))
+		for i, row := range res {
+			dfData[i] = make([]DataValue, len(columns))
+			for j, col := range columns {
+				dfData[i][j] = jsonValueToDataValue(row[col])
+			}
+		}
+
+		df := &DataFrame{
+			Columns:   columns,
+			Data:      dfData,
 			ColumnMap: make(map[string]*Series),
-		}, nil
-	}
-
-	var columns []string
-	for key := range res[0] {
-		columns = append(columns, key)
-	}
-
-	dfData := make([][]DataValue, len(res))
-	for i, row := range res {
-		dfData[i] = make([]DataValue, len(columns))
-		for j, col := range columns {
-			dfData[i][j] = jsonValueToDataValue(row[col])
 		}
-	}
 
-	df := &DataFrame{
-		Columns:   columns,
-		Data:      dfData,
-		ColumnMap: make(map[string]*Series),
-	}
-
-	for _, col := range columns {
-		colData := make([]DataValue, len(res))
-		for i, row := range dfData {
-			colData[i] = row[df.getColumnIndex(col)]
+		for _, col := range columns {
+			colData := make([]DataValue, len(res))
+			for i, row := range dfData {
+				colData[i] = row[df.getColumnIndex(col)]
+			}
+			df.ColumnMap[col] = NewSeries(colData)
 		}
-		df.ColumnMap[col] = NewSeries(colData)
+
+		return df, nil
 	}
-
-	return df, nil
-}
-
+*/
 func main() {
 	// Example 1: Reading CSV and basic operations
 	df1, err := ReadCSVToDataFrame("data.csv")
