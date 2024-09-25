@@ -135,11 +135,11 @@ func NewDataValue(value string) DataValue {
 func NewSeries(data []DataValue) *Series {
 	return &Series{
 		data:  data,
-		dtype: inferDataType(data),
+		dtype: InferDataType(data),
 	}
 }
 
-func inferDataType(data []DataValue) string {
+func InferDataType(data []DataValue) string {
 	if len(data) == 0 {
 		return "string"
 	}
@@ -179,7 +179,7 @@ func inferDataType(data []DataValue) string {
 	return "string"
 }
 
-func (s *Series) toArray() []DataValue {
+func (s *Series) ToArray() []DataValue {
 	return s.data
 }
 
@@ -228,6 +228,58 @@ func (s *Series) Unique() *Series {
 		}
 	}
 	return NewSeries(uniqueData)
+}
+
+func SafeDivision(x float64, y float64) float64 {
+	if y == 0 {
+		return 0
+	} else {
+		return x / y
+	}
+}
+
+func (s *Series) PercentChange() *Series {
+	var percentChangeSlice []DataValue
+	for i, item := range s.data {
+		if (item.Type == "float" || item.Type == "int") && (i > 0) {
+			prevValue, ok := toFloat64(s.data[i-1])
+			currentValue, ok2 := toFloat64(s.data[i])
+			if ok && ok2 {
+				percentChange := (currentValue - prevValue) / prevValue
+				percentChangeSlice = append(percentChangeSlice, DataValue{Type: "float", Value: percentChange})
+			} else {
+				percentChangeSlice = append(percentChangeSlice, DataValue{Type: "null", Value: nil})
+			}
+		} else {
+			percentChangeSlice = append(percentChangeSlice, DataValue{Type: "null", Value: nil})
+		}
+	}
+	return NewSeries(percentChangeSlice)
+}
+
+func (s *Series) MovingAverage(num_observations int) *Series {
+	if num_observations <= 0 || num_observations > len(s.data) {
+		return NewSeries(nil) // Handle invalid num_observations
+	}
+
+	var movingAverageSlice []DataValue
+	for i, value := range s.data {
+		if (value.Type != "float" && value.Type != "int") || i < num_observations-1 {
+			movingAverageSlice = append(movingAverageSlice, DataValue{Type: "null", Value: nil})
+		} else {
+			subSlice := s.data[i-(num_observations-1) : (i + 1)]
+			sum := 0.0
+			for _, val := range subSlice {
+				if valToFloat, ok := toFloat64(val); ok {
+					sum += valToFloat
+				}
+			}
+			movingAverageVal := sum / float64(num_observations)
+			movingAverageSlice = append(movingAverageSlice, DataValue{Type: "float", Value: movingAverageVal})
+		}
+	}
+
+	return NewSeries(movingAverageSlice)
 }
 
 func (s *Series) Sum() (float64, error) {
@@ -762,7 +814,7 @@ func (df *DataFrame) Concat(other *DataFrame) *DataFrame {
 	return newDF
 }
 
-func (df *DataFrame) Cumsum() *DataFrame {
+func (df *DataFrame) CumSum() *DataFrame {
 	newDF := &DataFrame{
 		Columns:   df.Columns,
 		Data:      make([][]DataValue, len(df.Data)),
@@ -772,7 +824,7 @@ func (df *DataFrame) Cumsum() *DataFrame {
 	for i, col := range df.Columns {
 		series := df.Col(col)
 		if series.dtype == "float" || series.dtype == "int" {
-			newSeries := series.Cumsum()
+			newSeries := series.CumSum()
 			newDF.ColumnMap[col] = newSeries
 
 			for j := range newDF.Data {
@@ -789,7 +841,7 @@ func (df *DataFrame) Cumsum() *DataFrame {
 
 // Series Methods
 
-func (s *Series) Cumsum() *Series {
+func (s *Series) CumSum() *Series {
 	newData := make([]DataValue, len(s.data))
 	var sum float64
 
@@ -808,6 +860,61 @@ func (s *Series) Cumsum() *Series {
 	}
 
 	return &Series{data: newData, dtype: "float"}
+}
+
+func (s *Series) CumProduct() *Series {
+	newData := make([]DataValue, len(s.data))
+	var product float64 = 1.0
+	for i, v := range s.data {
+		if v.Type != "float" && v.Type != "int" {
+			newData[i] = DataValue{Type: "null", Value: nil}
+		} else {
+			if floatVal, ok := toFloat64(v); ok {
+				product *= floatVal
+				newData[i] = DataValue{Type: "float", Value: product}
+			}
+		}
+
+	}
+	return &Series{data: newData, dtype: "float"}
+}
+
+func (s *Series) AddConstant(constant float64) *Series {
+	newData := make([]DataValue, len(s.data))
+	for i, v := range s.data {
+		if v.Type == "null" {
+			newData[i] = v
+			continue
+		}
+		switch v.Type {
+		case "int":
+			newData[i] = DataValue{Type: "int", Value: v.Value.(int) + int(constant)}
+		case "float":
+			newData[i] = DataValue{Type: "float", Value: v.Value.(float64) + constant}
+		default:
+			newData[i] = v // No operation for non-numeric types
+		}
+	}
+	return &Series{data: newData, dtype: s.dtype}
+}
+
+func (s *Series) Multiply(constant float64) *Series {
+	newData := make([]DataValue, len(s.data))
+	for i, v := range s.data {
+		if v.Type == "null" {
+			newData[i] = v
+			continue
+		}
+		switch v.Type {
+		case "int":
+			newData[i] = DataValue{Type: "int", Value: v.Value.(int) * int(constant)}
+		case "float":
+			newData[i] = DataValue{Type: "float", Value: v.Value.(float64) * constant}
+		default:
+			newData[i] = v // No operation for non-numeric types
+		}
+	}
+	return &Series{data: newData, dtype: s.dtype}
 }
 
 func (s *Series) Mode() ([]interface{}, error) {
@@ -1005,13 +1112,13 @@ func (df *DataFrame) GroupBy(categoricalCols []string, numericalCols []string, a
 				case "sum":
 					result = calculateSum(values)
 				case "min":
-					result = calculateMin(values)
+					result = CalculateMin(values)
 				case "max":
-					result = calculateMax(values)
+					result = CalculateMax(values)
 				case "avg":
-					result = calculateMean(values)
+					result = CalculateMean(values)
 				case "std":
-					result = calculateStdDev(values, calculateMean(values))
+					result = CalculateStdDev(values, CalculateMean(values))
 				default:
 					return nil, fmt.Errorf("unsupported aggregation function: %s", agg)
 				}
@@ -1398,14 +1505,14 @@ func calculateSum(data []float64) float64 {
 	return sum
 }
 
-func calculateMean(data []float64) float64 {
+func CalculateMean(data []float64) float64 {
 	if len(data) == 0 {
 		return 0
 	}
 	return calculateSum(data) / float64(len(data))
 }
 
-func calculateStdDev(data []float64, mean float64) float64 {
+func CalculateStdDev(data []float64, mean float64) float64 {
 	if len(data) == 0 {
 		return 0
 	}
@@ -1418,7 +1525,7 @@ func calculateStdDev(data []float64, mean float64) float64 {
 	return math.Sqrt(variance)
 }
 
-func calculateMin(data []float64) float64 {
+func CalculateMin(data []float64) float64 {
 	if len(data) == 0 {
 		return 0
 	}
@@ -1431,7 +1538,7 @@ func calculateMin(data []float64) float64 {
 	return min
 }
 
-func calculateMax(data []float64) float64 {
+func CalculateMax(data []float64) float64 {
 	if len(data) == 0 {
 		return 0
 	}
@@ -1444,7 +1551,7 @@ func calculateMax(data []float64) float64 {
 	return max
 }
 
-func calculatePercentile(sortedData []float64, percentile float64) float64 {
+func CalculatePercentile(sortedData []float64, percentile float64) float64 {
 	if len(sortedData) == 0 {
 		return 0
 	}
@@ -1607,16 +1714,16 @@ func (df *DataFrame) Describe() *DataFrame {
 			continue
 		}
 
-		mean := calculateMean(floats)
-		std := calculateStdDev(floats, mean)
-		min := calculateMin(floats)
-		max := calculateMax(floats)
+		mean := CalculateMean(floats)
+		std := CalculateStdDev(floats, mean)
+		min := CalculateMin(floats)
+		max := CalculateMax(floats)
 
 		sort.Float64s(floats)
 
-		q1 := calculatePercentile(floats, 0.25)
-		median := calculatePercentile(floats, 0.5)
-		q3 := calculatePercentile(floats, 0.75)
+		q1 := CalculatePercentile(floats, 0.25)
+		median := CalculatePercentile(floats, 0.5)
+		q3 := CalculatePercentile(floats, 0.75)
 
 		newData[1][j+1] = DataValue{Type: "float", Value: formatFloat(mean, 6)}
 		newData[2][j+1] = DataValue{Type: "float", Value: formatFloat(std, 6)}
@@ -2221,9 +2328,9 @@ func main() {
 	concatDF.Tail(10).Print()
 
 	// Example 25: Cumulative sum of a numeric column
-	cumsumDF := df1.Cumsum()
+	CumSumDF := df1.CumSum()
 	fmt.Println("\nCumulative sum of numeric columns:")
-	cumsumDF.Head(10).Print()
+	CumSumDF.Head(10).Print()
 
 	// Example 26: Mode of a column
 	if stateSeries := df1.Col("State"); stateSeries != nil {
@@ -2288,10 +2395,46 @@ func main() {
 
 	// Example 31: Cumulative sum of Revenue series
 	if revenueSeries := largeDF.Col("Revenue"); revenueSeries != nil {
-		revenueCumsum := revenueSeries.Cumsum()
+		revenueCumSum := revenueSeries.CumSum()
 		fmt.Println("\nCumulative sum of Revenue:")
-		revenueCumsum.Print()
+		revenueCumSum.Print()
 	} else {
 		fmt.Println("Revenue column not found in largeDF")
 	}
+
+	// Example 32: Moving Average of Revenue Series.
+
+	if percentChangeSeries := largeDF.Col("Revenue").PercentChange(); percentChangeSeries != nil {
+		fmt.Println("Percent Change of Revenue")
+		percentChangeSeries.Print()
+	}
+
+	if movingAverageSeries := largeDF.Col("Revenue").MovingAverage(5); movingAverageSeries != nil {
+		fmt.Println("Percent Change of Revenue")
+		fmt.Println("First Showing The Top 10 Rows...")
+		largeDF.Col("Revenue").Head(10).Print()
+		movingAverageSeries.Print()
+	}
+
+	// Example CumProduct
+
+	// Let's say I have stock data and want to get the percent change over time.
+
+	stockString := `1-1-2023,FBUX
+    1-2-2023,100
+    1-3-2023,95
+    1-4-2023,115
+    1-5-2023, 120
+	1-5-2024, 125`
+
+	stockDF, err := ReadCSVStringToDataFrame(stockString)
+	// Getting the Percent Change Day To Day
+	fmt.Println("\nGetting the change day by day....\n")
+	stockDF.Col("FBUX").PercentChange().Print()
+	// Now Getting The Percent Change Relative To Start
+	fmt.Println("Getting change relative to first day....\n")
+	stockDF.Col("FBUX").PercentChange().AddConstant(1).CumProduct().Print()
+
+	// This still isn't working quite correctly....
+
 }
