@@ -5,3 +5,4 @@ kmodes==0.11.0
 matplotlib==3.4.3
 seaborn==0.11.2
 openpyxl==3.0.9
+pip==24.3.1
