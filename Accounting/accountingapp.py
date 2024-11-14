@@ -151,7 +151,7 @@ class FinancialDataAnalyzer:
                 sheet_name = f"Comparative {statement_type}"
                 
                 comp_df.to_excel(writer, sheet_name=sheet_name)
-                og_df.to_excel(writer, sheet_name = sheet_name + " OG"
+                og_df.to_excel(writer, sheet_name = sheet_name + " OG")
                 
                 # Format the sheet
                 worksheet = writer.sheets[sheet_name]
