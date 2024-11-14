@@ -96,8 +96,10 @@ class FinancialDataAnalyzer:
                                 base = company_data.get('Total Revenue', 1)
                             else:  # Cash Flow
                                 base = company_data.get('Operating Cash Flow', 1)
-                            
+
+                            original_data = company_data
                             company_data = (company_data / abs(base) * 100).round(2)
+
                         
                         # Add date information to column name
                         date_str = pd.to_datetime(best_dates[company]).strftime('%Y-%m-%d')
