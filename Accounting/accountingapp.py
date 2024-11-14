@@ -81,7 +81,7 @@ class FinancialDataAnalyzer:
                 
             # Create comparative dataframe
             comparative_data = {}
-            original_data = None
+            original_data = None  # Initialize original_data
             for company, data in companies_data.items():
                 if statement_type in data['data'] and company in best_dates:
                     df = data['data'][statement_type]
@@ -154,7 +154,7 @@ class FinancialDataAnalyzer:
                 sheet_name = f"Comparative {statement_type}"
                 
                 comp_df.to_excel(writer, sheet_name=sheet_name)
-                og_df.to_excel(writer, sheet_name = sheet_name + " OG")
+                og_df.to_excel(writer, sheet_name=sheet_name + " OG")
                 
                 # Format the sheet
                 worksheet = writer.sheets[sheet_name]
@@ -170,41 +170,6 @@ class FinancialDataAnalyzer:
                 
                 # Freeze panes
                 worksheet.freeze_panes = 'B2'
-            
-            # Write individual company sheets
-            for ticker, company_data in data.items():
-                company_name = company_data['name']
-                
-                for statement_type, df in company_data['data'].items():
-                    if df is not None and not df.empty:
-                        sheet_name = f"{company_name[:30]} {statement_type[:15]}"
-                        sheet_name = sheet_name.replace('/', '-')
-                        
-                        if analysis_type == "Common Size":
-                            if statement_type == 'Balance Sheet':
-                                base = df.loc['Total Assets']
-                            elif statement_type == 'Income Statement':
-                                base = df.loc['Total Revenue']
-                            else:  # Cash Flow
-                                base = df.loc['Operating Cash Flow']
-                            df = (df.div(base.abs()) * 100).round(2)
-
-
-                        df = df.sort_values(df.columns[0], ascending = False)
-                        
-                        df.to_excel(writer, sheet_name=sheet_name)
-                    
-                        
-                        # Format individual sheets
-                        worksheet = writer.sheets[sheet_name]
-                        for idx, col in enumerate(df.columns):
-                            max_length = max(
-                                df.index.astype(str).map(len).max(),
-                                len(str(col)),
-                                df[col].astype(str).map(len).max()
-                            )
-                            worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 5
-                        
                         worksheet.freeze_panes = 'B2'
         
         return output.getvalue()
