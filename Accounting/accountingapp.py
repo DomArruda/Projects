@@ -160,7 +160,7 @@ class FinancialDataAnalyzer:
                         len(str(col)),
                         comp_df[col].astype(str).map(len).max()
                     )
-                    worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 2
+                    worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 5
                 
                 # Freeze panes
                 worksheet.freeze_panes = 'B2'
@@ -182,8 +182,12 @@ class FinancialDataAnalyzer:
                             else:  # Cash Flow
                                 base = df.loc['Operating Cash Flow']
                             df = (df.div(base.abs()) * 100).round(2)
+
+
+                        df = df.sort_values(df.columns[0], ascending = False)
                         
                         df.to_excel(writer, sheet_name=sheet_name)
+                    
                         
                         # Format individual sheets
                         worksheet = writer.sheets[sheet_name]
@@ -193,7 +197,7 @@ class FinancialDataAnalyzer:
                                 len(str(col)),
                                 df[col].astype(str).map(len).max()
                             )
-                            worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 2
+                            worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 5
                         
                         worksheet.freeze_panes = 'B2'
         
