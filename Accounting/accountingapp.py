@@ -170,7 +170,6 @@ class FinancialDataAnalyzer:
                 
                 # Freeze panes
                 worksheet.freeze_panes = 'B2'
-                        worksheet.freeze_panes = 'B2'
         
         return output.getvalue()
 
