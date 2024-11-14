@@ -10,6 +10,10 @@ from openpyxl.utils import get_column_letter
 from io import BytesIO
 import plotly.graph_objects as go
 
+st.set_page_config(
+        page_title="AccountingAppFIN113",
+)
+
 class FinancialDataAnalyzer:
     def __init__(self):
         self.statement_types = {
