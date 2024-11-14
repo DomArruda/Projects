@@ -81,6 +81,7 @@ class FinancialDataAnalyzer:
                 
             # Create comparative dataframe
             comparative_data = {}
+            original_data = None
             for company, data in companies_data.items():
                 if statement_type in data['data'] and company in best_dates:
                     df = data['data'][statement_type]
@@ -106,7 +107,7 @@ class FinancialDataAnalyzer:
                         comparative_data[f"{company} ({date_str})"] = company_data
             
             if comparative_data:
-                comparative_statements[statement_type] = (pd.DataFrame(comparative_data), pd.Dataframe(original_data))
+                comparative_statements[statement_type] = [pd.DataFrame(comparative_data), pd.DataFrame(original_data)]
         
         return comparative_statements
 
