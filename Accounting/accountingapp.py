@@ -104,7 +104,7 @@ class FinancialDataAnalyzer:
                         comparative_data[f"{company} ({date_str})"] = company_data
             
             if comparative_data:
-                comparative_statements[statement_type] = pd.DataFrame(comparative_data)
+                comparative_statements[statement_type] = (pd.DataFrame(comparative_data), original_data)
         
         return comparative_statements
 
@@ -146,9 +146,12 @@ class FinancialDataAnalyzer:
             comparative_statements = self.create_comparative_statements(data, analysis_type)
             
             # Write comparative statements first
-            for statement_type, comp_df in comparative_statements.items():
+            for statement_type, dfs in comparative_statements.items():
+                comp_df, og_df = dfs
                 sheet_name = f"Comparative {statement_type}"
+                
                 comp_df.to_excel(writer, sheet_name=sheet_name)
+                og_df.to_excel(writer, sheet_name = sheet_name + " OG"
                 
                 # Format the sheet
                 worksheet = writer.sheets[sheet_name]
