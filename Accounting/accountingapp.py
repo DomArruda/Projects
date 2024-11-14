@@ -10,24 +10,12 @@ from openpyxl.utils import get_column_letter
 from io import BytesIO
 import plotly.graph_objects as go
 
-class FinancialInsightsAnalyzer:
+class FinancialDataAnalyzer:
     def __init__(self):
-        self.key_metrics = {
-            'Balance Sheet': {
-                'Liquidity': ['Cash And Cash Equivalents', 'Current Assets', 'Current Liabilities'],
-                'Asset Structure': ['Total Assets', 'Property Plant And Equipment', 'Intangible Assets'],
-                'Capital Structure': ['Total Liabilities', 'Total Stockholder Equity', 'Long Term Debt']
-            },
-            'Income Statement': {
-                'Profitability': ['Gross Profit', 'Operating Income', 'Net Income'],
-                'Margins': ['Gross Profit', 'Operating Income', 'Net Income'],
-                'Efficiency': ['Research And Development', 'Selling General And Administrative']
-            },
-            'Cash Flow': {
-                'Operations': ['Operating Cash Flow', 'Change In Working Capital'],
-                'Investment': ['Capital Expenditure', 'Investments In Property Plant And Equipment'],
-                'Financing': ['Total Cash From Financing Activities', 'Dividends Paid']
-            }
+        self.statement_types = {
+            'Balance Sheet': 'balance_sheet',
+            'Income Statement': 'income_stmt',
+            'Cash Flow Statement': 'cash_flow'
         }
 
     def get_company_name(self, ticker):
@@ -37,6 +25,88 @@ class FinancialInsightsAnalyzer:
             return company.info.get('longName', ticker)
         except:
             return ticker
+
+    def find_best_comparison_date(self, companies_data, statement_type):
+        """
+        Find the most appropriate comparison date across companies
+        """
+        all_dates = set()
+        company_dates = {}
+        
+        # Collect all dates and map companies to their available dates
+        for company, data in companies_data.items():
+            if statement_type in data['data']:
+                df = data['data'][statement_type]
+                if df is not None and not df.empty:
+                    dates = df.columns
+                    company_dates[company] = dates
+                    all_dates.update(dates)
+        
+        # Convert to list and sort (most recent first)
+        all_dates = sorted(list(all_dates), reverse=True)
+        
+        if not all_dates:
+            return {}
+            
+        # Find most recent common date
+        common_date = None
+        for date in all_dates:
+            companies_with_date = sum(1 for dates in company_dates.values() if date in dates)
+            if companies_with_date > 1:
+                common_date = date
+                break
+        
+        # Assign dates for each company
+        best_dates = {}
+        for company, dates in company_dates.items():
+            if common_date and common_date in dates:
+                best_dates[company] = common_date
+            else:
+                # Use most recent date for this company
+                best_dates[company] = dates[0] if len(dates) > 0 else None
+                
+        return best_dates
+
+    def create_comparative_statements(self, companies_data, analysis_type="Original"):
+        """
+        Create comparative financial statements with companies side by side
+        """
+        comparative_statements = {}
+        
+        for statement_type in self.statement_types.keys():
+            # Find best comparison dates for this statement
+            best_dates = self.find_best_comparison_date(companies_data, statement_type)
+            if not best_dates:
+                continue
+                
+            # Create comparative dataframe
+            comparative_data = {}
+            for company, data in companies_data.items():
+                if statement_type in data['data'] and company in best_dates:
+                    df = data['data'][statement_type]
+                    if df is not None and not df.empty and best_dates[company] is not None:
+                        # Extract data for the best date
+                        company_data = df[best_dates[company]]
+                        
+                        # Perform common size analysis if requested
+                        if analysis_type == "Common Size":
+                            if statement_type == 'Balance Sheet':
+                                base = company_data.get('Total Assets', 1)
+                            elif statement_type == 'Income Statement':
+                                base = company_data.get('Total Revenue', 1)
+                            else:  # Cash Flow
+                                base = company_data.get('Operating Cash Flow', 1)
+                            
+                            company_data = (company_data / abs(base) * 100).round(2)
+                        
+                        # Add date information to column name
+                        date_str = pd.to_datetime(best_dates[company]).strftime('%Y-%m-%d')
+                        comparative_data[f"{company} ({date_str})"] = company_data
+            
+            if comparative_data:
+                comparative_statements[statement_type] = pd.DataFrame(comparative_data)
+        
+        return comparative_statements
 
     def fetch_financial_data(self, tickers, statements):
         """Fetch financial data for multiple companies"""
@@ -67,160 +137,35 @@ class FinancialInsightsAnalyzer:
                 
         return results
 
-    def perform_common_size_analysis(self, df, statement_type):
-        """Perform common size analysis"""
-        try:
-            if df is None or df.empty:
-                return None
-                
-            df = df.copy()
-            
-            if statement_type == 'Balance Sheet':
-                base = df.loc['Total Assets']
-            elif statement_type == 'Income Statement':
-                base = df.loc['Total Revenue']
-            else:
-                base = df.loc['Operating Cash Flow']
-                
-            common_size = (df.div(base.abs()) * 100).round(2)
-            return common_size
-            
-        except Exception as e:
-            st.error(f"Error in common size analysis: {str(e)}")
-            return None
-
-    def generate_insights(self, companies_data, analysis_type="Common Size"):
-        """Generate insights from financial data"""
-        insights = {
-            'Summary': [],
-            'Metrics': {},
-            'Comparisons': [],
-            'Anomalies': []
-        }
-        
-        for statement_type in ['Balance Sheet', 'Income Statement', 'Cash Flow']:
-            metrics = {}
-            for company, data in companies_data.items():
-                if statement_type in data['data']:
-                    df = data['data'][statement_type]
-                    if analysis_type == "Common Size":
-                        df = self.perform_common_size_analysis(df, statement_type)
-                    
-                    for category, items in self.key_metrics[statement_type].items():
-                        for item in items:
-                            if item in df.index:
-                                metric_key = f"{category} - {item}"
-                                if metric_key not in metrics:
-                                    metrics[metric_key] = {}
-                                metrics[metric_key][company] = df.loc[item].iloc[-1]
-            
-            for metric, values in metrics.items():
-                if len(values) > 1:
-                    avg_value = np.mean(list(values.values()))
-                    std_dev = np.std(list(values.values()))
-                    
-                    for company, value in values.items():
-                        z_score = (value - avg_value) / std_dev if std_dev != 0 else 0
-                        
-                        if abs(z_score) > 2:
-                            insights['Anomalies'].append({
-                                'Metric': metric,
-                                'Company': company,
-                                'Value': value,
-                                'Average': avg_value,
-                                'Difference': f"{((value - avg_value) / avg_value * 100):.1f}%"
-                            })
-                
-                insights['Metrics'][metric] = values
-        
-        return insights
-
-    def create_summary_sheet(self, workbook, insights):
-        """Create summary dashboard"""
-        worksheet = workbook.create_sheet("Summary Dashboard", 0)
-        
-        # Define styles
-        header_style = NamedStyle(name='header')
-        header_style.font = Font(bold=True)
-        header_style.fill = PatternFill(start_color='CCE5FF', end_color='CCE5FF', fill_type='solid')
-        header_style.alignment = Alignment(horizontal='center')
-        
-        highlight_style = NamedStyle(name='highlight')
-        highlight_style.font = Font(color='006100')
-        highlight_style.fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
-        
-        warning_style = NamedStyle(name='warning')
-        warning_style.font = Font(color='9C0006')
-        warning_style.fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
-        
-        # Title
-        worksheet['A1'] = 'Financial Analysis Summary'
-        worksheet['A1'].style = header_style
-        worksheet.merge_cells('A1:E1')
-        
-        # Notable Findings section
-        current_row = 3
-        worksheet[f'A{current_row}'] = 'Notable Findings'
-        worksheet[f'A{current_row}'].style = header_style
-        current_row += 1
-        
-        # Add findings
-        for anomaly in insights['Anomalies']:
-            cell = worksheet[f'A{current_row}']
-            cell.value = f"{anomaly['Company']}: {anomaly['Metric']} is {anomaly['Difference']} different from average"
-            cell.style = highlight_style if float(anomaly['Difference'].strip('%')) > 0 else warning_style
-            current_row += 1
-        
-        # Key Metrics section
-        current_row += 2
-        worksheet[f'A{current_row}'] = 'Key Metrics Comparison'
-        worksheet[f'A{current_row}'].style = header_style
-        current_row += 1
-        
-        # Get companies for comparison
-        if insights['Metrics']:
-            companies = list(next(iter(insights['Metrics'].values())).keys())
-            
-            # Write company headers
-            for i, company in enumerate(companies):
-                cell = worksheet[f'{chr(66+i)}{current_row}']
-                cell.value = company
-                cell.style = header_style
-            
-            # Write metrics
-            for metric, values in insights['Metrics'].items():
-                current_row += 1
-                worksheet[f'A{current_row}'] = metric
-                
-                for i, company in enumerate(companies):
-                    value = values.get(company, 'N/A')
-                    cell = worksheet[f'{chr(66+i)}{current_row}']
-                    cell.value = value if value == 'N/A' else f"{value:.1f}%"
-                    
-                    if value != 'N/A':
-                        avg_value = np.mean([v for v in values.values() if v != 'N/A'])
-                        if abs(value - avg_value) > avg_value * 0.2:
-                            cell.style = highlight_style if value > avg_value else warning_style
-        
-        # Adjust column widths safely
-        for col in ['A', 'B', 'C', 'D', 'E']:  # Adjust for used columns
-            max_length = 0
-            for cell in worksheet[col]:
-                if cell.value:
-                    try:
-                        max_length = max(max_length, len(str(cell.value)))
-                    except:
-                        pass
-            worksheet.column_dimensions[col].width = max_length + 2
-
-    def export_to_excel(self, data, insights, analysis_type="Original"):
-        """Export to Excel with summary dashboard"""
+    def export_to_excel(self, data, analysis_type="Original"):
+        """Export to Excel with comparative statements"""
         output = BytesIO()
         
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            workbook = writer.book
-            self.create_summary_sheet(workbook, insights)
+            # Create comparative statements
+            comparative_statements = self.create_comparative_statements(data, analysis_type)
             
+            # Write comparative statements first
+            for statement_type, comp_df in comparative_statements.items():
+                sheet_name = f"Comparative {statement_type}"
+                comp_df.to_excel(writer, sheet_name=sheet_name)
+                
+                # Format the sheet
+                worksheet = writer.sheets[sheet_name]
+                
+                # Auto-adjust column widths
+                for idx, col in enumerate(comp_df.columns):
+                    max_length = max(
+                        comp_df.index.astype(str).map(len).max(),
+                        len(str(col)),
+                        comp_df[col].astype(str).map(len).max()
+                    )
+                    worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 2
+                
+                # Freeze panes
+                worksheet.freeze_panes = 'B2'
+            
+            # Write individual company sheets
             for ticker, company_data in data.items():
                 company_name = company_data['name']
                 
@@ -230,15 +175,27 @@ class FinancialInsightsAnalyzer:
                         sheet_name = sheet_name.replace('/', '-')
                         
                         if analysis_type == "Common Size":
-                            df = self.perform_common_size_analysis(df, statement_type)
+                            if statement_type == 'Balance Sheet':
+                                base = df.loc['Total Assets']
+                            elif statement_type == 'Income Statement':
+                                base = df.loc['Total Revenue']
+                            else:  # Cash Flow
+                                base = df.loc['Operating Cash Flow']
+                            df = (df.div(base.abs()) * 100).round(2)
                         
-                        if df is not None:
-                            df.to_excel(writer, sheet_name=sheet_name)
-                            worksheet = writer.sheets[sheet_name]
-                            for idx, col in enumerate(df.columns):
-                                max_length = max(df[col].astype(str).apply(len).max(),
-                                              len(str(col)))
-                                worksheet.column_dimensions[chr(65 + idx)].width = max_length + 2
+                        df.to_excel(writer, sheet_name=sheet_name)
+                        
+                        # Format individual sheets
+                        worksheet = writer.sheets[sheet_name]
+                        for idx, col in enumerate(df.columns):
+                            max_length = max(
+                                df.index.astype(str).map(len).max(),
+                                len(str(col)),
+                                df[col].astype(str).map(len).max()
+                            )
+                            worksheet.column_dimensions[get_column_letter(idx + 2)].width = max_length + 2
+                        
+                        worksheet.freeze_panes = 'B2'
         
         return output.getvalue()
 
@@ -311,7 +268,13 @@ class FuzzyMatcher:
             if not unmatched_df.empty:
                 unmatched_df.to_excel(writer, sheet_name='Unmatched Items', index=False)
 
+            df1['Row Number'] = df1.index + 1
+            df2['Row Number'] = df2.index + 1
+            df1.to_excel(writer, sheet_name = 'Original Dataset 1', index = False)
+            df2.to_excel(writer, sheet_name = 'Origial Dataset 2', index = False)
+
         return output.getvalue()
+
 def main():
     st.title("Financial Analysis Suite")
 
@@ -320,7 +283,7 @@ def main():
     with tab1:
         st.header("Financial Statement Analysis")
         
-        analyzer = FinancialInsightsAnalyzer()
+        analyzer = FinancialDataAnalyzer()
         
         tickers_input = st.text_area(
             "Enter ticker symbols (separated by semicolons)",
@@ -351,26 +314,16 @@ def main():
                 
             with st.spinner("Fetching financial data..."):
                 results = analyzer.fetch_financial_data(tickers, selected_statements)
-                insights = analyzer.generate_insights(results, analysis_type)
                 
-                for ticker in tickers:
-                    if ticker in results:
-                        st.header(f"{results[ticker]['name']} ({ticker})")
-                        
-                        for statement in selected_statements:
-                            if statement in results[ticker]['data']:
-                                st.subheader(statement)
-                                df = results[ticker]['data'][statement]
-                                
-                                if analysis_type == "Common Size":
-                                    df = analyzer.perform_common_size_analysis(df, statement)
-                                    
-                                if df is not None:
-                                    st.dataframe(df)
-                                else:
-                                    st.warning(f"No {statement} data available for {ticker}")
+                # Display comparative statements
+                comparative_statements = analyzer.create_comparative_statements(results, analysis_type)
                 
-                excel_data = analyzer.export_to_excel(results, insights, analysis_type)
+                for statement_type, comp_df in comparative_statements.items():
+                    st.subheader(f"Comparative {statement_type}")
+                    st.dataframe(comp_df)
+                
+                # Create Excel export
+                excel_data = analyzer.export_to_excel(results, analysis_type)
                 
                 st.download_button(
                     label="Download Complete Analysis",
@@ -384,7 +337,6 @@ def main():
         
         matcher = FuzzyMatcher()
 
-        # Create two columns for file upload
         upload_col1, upload_col2 = st.columns(2)
         
         with upload_col1:
@@ -407,7 +359,6 @@ def main():
                 else:
                     df2 = pd.read_excel(file2)
 
-                # Create two columns for column selection
                 select_col1, select_col2 = st.columns(2)
                 
                 with select_col1:
@@ -445,9 +396,8 @@ def main():
                             st.subheader("Unmatched Items")
                             st.write(f"Found {len(unmatched_df)} unmatched items")
                             st.dataframe(unmatched_df)
-
             except Exception as e:
                 st.error(f"Error processing files: {str(e)}")
-
+                 
 if __name__ == "__main__":
     main()
