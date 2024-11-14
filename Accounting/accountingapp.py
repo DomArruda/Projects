@@ -106,7 +106,7 @@ class FinancialDataAnalyzer:
                         comparative_data[f"{company} ({date_str})"] = company_data
             
             if comparative_data:
-                comparative_statements[statement_type] = (pd.DataFrame(comparative_data), original_data)
+                comparative_statements[statement_type] = (pd.DataFrame(comparative_data), pd.Dataframe(original_data))
         
         return comparative_statements
 
