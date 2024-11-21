@@ -64,12 +64,13 @@ query = code_editor(code="/*Write your code here!*/\n\n\n\n\n\n", lang="sql", ke
 
 if (str(query['text']).strip(" ") != ''):
     try:
-        for query in query['text'].lower().split(';'):
-            st.text('')
-            df = query_database(query = query)
-            st.markdown(f'*Number of rows:{df.shape[0]:,}*')
-            st.markdown(f'*Number of cols:{df.shape[1]:,}*')
-            st.dataframe(df, use_container_width = False)
+        for query in query['text'].lower().strip().split(';'):
+            if query:
+                st.text('')
+                df = query_database(query = query)
+                st.markdown(f'*Number of rows:{df.shape[0]:,}*')
+                st.markdown(f'*Number of cols:{df.shape[1]:,}*')
+                st.dataframe(df, use_container_width = False)
            
     except Exception as e:
         if "no open result set" in str(e).lower():
