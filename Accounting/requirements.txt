@@ -1,8 +1,7 @@
-streamlit==1.31.0
-pandas==2.2.0
-yfinance==0.2.36
-numpy==1.26.3
-fuzzywuzzy==0.18.0
-python-Levenshtein==0.23.0
-openpyxl==3.1.2
-plotly==5.18.0
+streamlit>=1.22.0
+pandas>=1.5.3
+yfinance>=0.2.17
+numpy>=1.24.3
+fuzzywuzzy>=0.18.0
+openpyxl>=3.1.2
+plotly>=5.13.0
