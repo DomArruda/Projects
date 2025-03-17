@@ -55,11 +55,14 @@ class FinancialDataAnalyzer:
                     dates = df.columns
                     company_dates[company] = dates
                     all_dates.update(dates)
+                else:
+                    logger.warning(f"No data available for {statement_type} of {company}")
         
         # Convert to list and sort (most recent first)
         all_dates = sorted(list(all_dates), reverse=True)
         
         if not all_dates:
+            logger.warning(f"No dates available for {statement_type} across companies")
             return {}
             
         # Find most recent common date
@@ -80,6 +83,7 @@ class FinancialDataAnalyzer:
                 best_dates[company] = dates[0]
             else:
                 best_dates[company] = None
+                logger.warning(f"No valid dates for {company} in {statement_type}")
                 
         return best_dates
 
@@ -98,6 +102,7 @@ class FinancialDataAnalyzer:
                 assets_rows = [i for i in df.index if 'asset' in str(i).lower()]
                 if assets_rows:
                     return df.loc[assets_rows[0], date_col]
+                logger.warning(f"No base value found for {statement_type}, using 1 as fallback")
                 return 1  # Default fallback
 
         elif statement_type == 'Income Statement':
@@ -110,6 +115,7 @@ class FinancialDataAnalyzer:
                 revenue_rows = [i for i in df.index if 'revenue' in str(i).lower() or 'sales' in str(i).lower()]
                 if revenue_rows:
                     return df.loc[revenue_rows[0], date_col]
+                logger.warning(f"No base value found for {statement_type}, using 1 as fallback")
                 return 1  # Default fallback
 
         else:  # Cash Flow Statement
@@ -122,6 +128,7 @@ class FinancialDataAnalyzer:
                 cf_rows = [i for i in df.index if 'operating' in str(i).lower() and 'cash' in str(i).lower()]
                 if cf_rows:
                     return df.loc[cf_rows[0], date_col]
+                logger.warning(f"No base value found for {statement_type}, using 1 as fallback")
                 return 1  # Default fallback
 
     def create_comparative_statements(self, companies_data, analysis_type="Original"):
@@ -134,6 +141,7 @@ class FinancialDataAnalyzer:
             # Find best comparison dates for this statement
             best_dates = self.find_best_comparison_date(companies_data, statement_name)
             if not best_dates:
+                logger.warning(f"No comparison dates found for {statement_name}")
                 continue
                 
             # Create comparative dataframe
@@ -156,15 +164,20 @@ class FinancialDataAnalyzer:
                                     company_data = (company_data / abs(base) * 100).round(2)
                                 else:
                                     company_data = company_data.copy()  # No transformation if base is zero
+                                    logger.warning(f"Base value is zero for {company} in {statement_name}, skipping common size transformation")
                             
                             # Add date information to column name
                             date_str = pd.to_datetime(date_col).strftime('%Y-%m-%d')
                             comparative_data[f"{company} ({date_str})"] = company_data
                         except Exception as e:
                             logger.error(f"Error processing {company} data for {statement_name}: {str(e)}")
+                    else:
+                        logger.warning(f"Data for {company} in {statement_name} is empty or unavailable")
             
             if comparative_data:
                 comparative_statements[statement_name] = pd.DataFrame(comparative_data)
+            else:
+                logger.warning(f"No comparative data generated for {statement_name}")
         
         return comparative_statements
 
@@ -191,13 +204,16 @@ class FinancialDataAnalyzer:
                             df = company.cash_flow
                         
                         if df is not None and not df.empty:
+                            # Ensure all columns are datetime for consistency
+                            df.columns = pd.to_datetime(df.columns)
                             results[ticker]['data'][statement] = df
                             logger.info(f"Successfully fetched {statement} for {ticker}")
                         else:
                             logger.warning(f"Empty {statement} data for {ticker}")
+                            st.warning(f"Could not fetch {statement} for {ticker}: Data is empty")
                     except Exception as e:
                         logger.error(f"Error fetching {statement} for {ticker}: {str(e)}")
-                        st.warning(f"Could not fetch {statement} for {ticker}")
+                        st.warning(f"Could not fetch {statement} for {ticker}: {str(e)}")
                         
             except Exception as e:
                 error_msg = f"Error fetching data for {ticker}: {str(e)}"
@@ -211,6 +227,9 @@ class FinancialDataAnalyzer:
         output = BytesIO()
         
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Flag to track if any sheet has been written
+            sheet_written = False
+            
             # Create comparative statements
             comparative_statements = self.create_comparative_statements(data, analysis_type)
             
@@ -218,6 +237,7 @@ class FinancialDataAnalyzer:
             for statement_type, comp_df in comparative_statements.items():
                 sheet_name = f"Comparative {statement_type}"[:31]  # Excel sheet name limit
                 comp_df.to_excel(writer, sheet_name=sheet_name)
+                sheet_written = True
                 
                 # Format the sheet
                 worksheet = writer.sheets[sheet_name]
@@ -255,10 +275,11 @@ class FinancialDataAnalyzer:
                                     if base != 0:
                                         export_df[date_col] = (export_df[date_col] / abs(base) * 100).round(2)
                             except Exception as e:
-                                logger.error(f"Error in common size calculation: {str(e)}")
+                                logger.error(f"Error in common size calculation for {ticker} {statement_type}: {str(e)}")
                         
                         try:
                             export_df.to_excel(writer, sheet_name=sheet_name)
+                            sheet_written = True
                             
                             # Format individual sheets
                             worksheet = writer.sheets[sheet_name]
@@ -273,7 +294,14 @@ class FinancialDataAnalyzer:
                             worksheet.freeze_panes = 'B2'
                         except Exception as e:
                             logger.error(f"Error writing sheet {sheet_name}: {str(e)}")
-                
+            
+            # If no sheets were written, add a default sheet to avoid the error
+            if not sheet_written:
+                logger.warning("No sheets were written to Excel. Adding a default sheet.")
+                pd.DataFrame({"Message": ["No data available for the selected companies and statements."]}).to_excel(
+                    writer, sheet_name="No Data", index=False
+                )
+
         return output.getvalue()
 
 
@@ -428,7 +456,7 @@ def main():
         
         tickers_input = st.text_area(
             "Enter ticker symbols (separated by semicolons)",
-            "AAPL; MSFT; GOOGL"
+            "AAPL;MSFT;GOOGL"
         )
         
         tickers = [t.strip() for t in tickers_input.split(";") if t.strip()]
@@ -461,15 +489,26 @@ def main():
                         st.error("Could not fetch data for any of the provided tickers")
                         return
                     
+                    # Check if any data was actually fetched
+                    has_data = False
+                    for ticker, company_data in results.items():
+                        if company_data['data']:
+                            has_data = True
+                            break
+                    
+                    if not has_data:
+                        st.error("No financial data could be fetched for the selected companies and statements.")
+                        return
+                    
                     # Display comparative statements
                     comparative_statements = analyzer.create_comparative_statements(results, analysis_type)
                     
                     if not comparative_statements:
                         st.warning("Could not create comparative statements. Data may be unavailable.")
-                    
-                    for statement_type, comp_df in comparative_statements.items():
-                        st.subheader(f"Comparative {statement_type}")
-                        st.dataframe(comp_df)
+                    else:
+                        for statement_type, comp_df in comparative_statements.items():
+                            st.subheader(f"Comparative {statement_type}")
+                            st.dataframe(comp_df)
                     
                     # Create Excel export
                     excel_data = analyzer.export_to_excel(results, analysis_type)
