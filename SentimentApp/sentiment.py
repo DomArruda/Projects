@@ -26,7 +26,7 @@ SENTIMENT_DICT = {
     '4': 'Positive',
     '5': 'Very Positive'
 }
-SAMPLE_DATA_PATH = 'AmazonProductReviews.csv'  # Fixed path
+SAMPLE_DATA_PATH = r'https://github.com/DomArruda/Projects/blob/main/SentimentApp/AmazonProductReviews.csv' # Fixed path
 
 @st.cache_resource
 def load_model(boolean):
