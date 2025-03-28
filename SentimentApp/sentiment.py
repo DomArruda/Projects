@@ -442,7 +442,6 @@ def save_to_excel(dataframe):
         return None
 
 def main():
-    st.set_page_config(page_title="Jim Bot - Sentiment Analysis", page_icon="🤖", layout="wide")
     
     st.title('Jim Bot 🤖')
     st.markdown("_Sentiment analysis for your reviews_")
