@@ -1,5 +1,3 @@
-# Set page config at the very top
-st.set_page_config(page_title="Jim Bot - Sentiment Analysis", page_icon="🤖", layout="wide")
 
 import streamlit as st
 from bs4 import BeautifulSoup
@@ -17,6 +15,8 @@ import io
 import urllib.parse
 import time
 from requests.exceptions import RequestException
+st.set_page_config(page_title="Jim Bot - Sentiment Analysis", page_icon="🤖", layout="wide")
+
 
 # Constants
 MAX_TOKEN_LENGTH = 512
