@@ -1,3 +1,6 @@
+# Set page config at the very top
+st.set_page_config(page_title="Jim Bot - Sentiment Analysis", page_icon="🤖", layout="wide")
+
 import streamlit as st
 from bs4 import BeautifulSoup
 import numpy as np
@@ -14,7 +17,6 @@ import io
 import urllib.parse
 import time
 from requests.exceptions import RequestException
-st.set_page_config(page_title="Jim Bot - Sentiment Analysis", page_icon="🤖", layout="wide")
 
 # Constants
 MAX_TOKEN_LENGTH = 512
@@ -26,7 +28,7 @@ SENTIMENT_DICT = {
     '4': 'Positive',
     '5': 'Very Positive'
 }
-SAMPLE_DATA_PATH = r'https://github.com/DomArruda/Projects/blob/main/SentimentApp/AmazonProductReviews.csv' # Fixed path
+SAMPLE_DATA_PATH = 'AmazonProductReviews.csv'  # Fixed path
 
 @st.cache_resource
 def load_model(boolean):
@@ -96,32 +98,71 @@ def reviews_scrape(url, num_pages, progress_bar=None):
     # Prepare page URLs based on common pagination patterns
     link_list = [url]  # Start with the original URL
     
-    # Add query parameter for pagination if not already in URL
-    query_params = urllib.parse.parse_qs(parsed_url.query)
+    # Check if this is a TripAdvisor URL
+    is_tripadvisor = "tripadvisor.com" in url.lower() and "restaurant_review" in url.lower()
     
-    # Different pagination patterns
-    pagination_formats = [
-        lambda i: f"{base_url}?{'&'.join([f'{k}={v[0]}' for k, v in query_params.items() if k != 'page' and k != 'start'])}&page={i}",
-        lambda i: f"{base_url}?{'&'.join([f'{k}={v[0]}' for k, v in query_params.items() if k != 'page' and k != 'start'])}&start={i*10}",
-        lambda i: f"{base_url}/page/{i}/{'?' + urllib.parse.urlencode(query_params) if query_params else ''}",
-    ]
-    
-    # Use the original URL format if it has pagination indicators
-    if 'page=' in url or 'start=' in url or '/page/' in url:
-        # Try to detect the pattern from the URL
-        if 'page=' in url:
-            pattern_index = 0
-        elif 'start=' in url:
-            pattern_index = 1
+    if is_tripadvisor:
+        # Extract base URL parts
+        if "Reviews-" in url:
+            # Handle the case with or without page indicator
+            parts = url.split("Reviews")
+            if len(parts) == 2:
+                base_before = parts[0] + "Reviews"
+                
+                # Check if there's already a page indicator like -or15-
+                if "-or" in parts[1]:
+                    # Extract the part after the page indicator
+                    after_parts = parts[1].split("-", 2)
+                    if len(after_parts) >= 3:
+                        base_after = "-" + after_parts[2]
+                    else:
+                        base_after = parts[1]
+                else:
+                    base_after = parts[1]
+                
+                # Create URLs for additional pages
+                for i in range(2, num_pages + 1):
+                    offset = (i - 1) * 10  # TripAdvisor uses offsets of 10 per page
+                    next_page = f"{base_before}-or{offset}{base_after}"
+                    link_list.append(next_page)
         else:
-            pattern_index = 2
-            
-        for i in range(2, num_pages + 1):  # Start from page 2
-            link_list.append(pagination_formats[pattern_index](i))
+            # Fallback to basic URL manipulation
+            for i in range(2, num_pages + 1):
+                offset = (i - 1) * 10
+                if ".html" in url:
+                    next_page = url.replace(".html", f"-or{offset}.html")
+                elif ".htm" in url:
+                    next_page = url.replace(".htm", f"-or{offset}.htm")
+                else:
+                    next_page = f"{url}-or{offset}"
+                link_list.append(next_page)
     else:
-        # If no pattern is detected, try the first format
-        for i in range(2, num_pages + 1):
-            link_list.append(pagination_formats[0](i))
+        # For other websites, try common pagination patterns
+        query_params = urllib.parse.parse_qs(parsed_url.query)
+        
+        # Different pagination formats
+        pagination_formats = [
+            lambda i: f"{base_url}?{'&'.join([f'{k}={v[0]}' for k, v in query_params.items() if k != 'page' and k != 'start'])}&page={i}",
+            lambda i: f"{base_url}?{'&'.join([f'{k}={v[0]}' for k, v in query_params.items() if k != 'page' and k != 'start'])}&start={i*10}",
+            lambda i: f"{base_url}/page/{i}/{'?' + urllib.parse.urlencode(query_params) if query_params else ''}",
+        ]
+        
+        # Use the original URL format if it has pagination indicators
+        if 'page=' in url or 'start=' in url or '/page/' in url:
+            # Try to detect the pattern from the URL
+            if 'page=' in url:
+                pattern_index = 0
+            elif 'start=' in url:
+                pattern_index = 1
+            else:
+                pattern_index = 2
+                
+            for i in range(2, num_pages + 1):  # Start from page 2
+                link_list.append(pagination_formats[pattern_index](i))
+        else:
+            # If no pattern is detected, try the first format
+            for i in range(2, num_pages + 1):
+                link_list.append(pagination_formats[0](i))
     
     # Initialize results
     df_list = []
@@ -129,7 +170,7 @@ def reviews_scrape(url, num_pages, progress_bar=None):
     
     # Common review container classes/IDs
     review_patterns = [
-        re.compile('.*comment.*'),  # Original pattern
+        re.compile('.*comment.*'),
         re.compile('.*review.*'),
         re.compile('.*feedback.*'),
         re.compile('.*testimonial.*'),
@@ -143,34 +184,84 @@ def reviews_scrape(url, num_pages, progress_bar=None):
     for idx, page_url in enumerate(link_list):
         # Add delay to avoid being blocked
         if idx > 0:
-            time.sleep(1)
+            time.sleep(1.5)  # Slightly longer delay for TripAdvisor
         
         try:
-            r = requests.get(page_url, headers=headers, timeout=10)
+            st.sidebar.info(f"Scraping page {idx+1}: {page_url}")
+            r = requests.get(page_url, headers=headers, timeout=15)
             r.raise_for_status()  # Raise exception for 4XX/5XX responses
             
             soup = BeautifulSoup(r.text, 'html.parser')
             
             # Try different patterns to find review elements
             reviews = []
-            for pattern in review_patterns:
-                # Look for paragraphs with matching class
-                results = soup.find_all('p', {'class': pattern})
-                if results:
-                    reviews.extend([result.text.strip() for result in results])
-                    break
+            
+            # TripAdvisor-specific approach based on the HTML structure provided
+            if is_tripadvisor:
+                # First look for elements matching the structure in the provided HTML
+                # Look for review-body elements
+                review_bodies = soup.find_all('div', attrs={'data-test-target': 'review-body'})
+                if review_bodies:
+                    for body in review_bodies:
+                        # Find the text content
+                        text_divs = body.select('.biGQs._P.pZUbB.KxBGd span.JguWG')
+                        if text_divs:
+                            for div in text_divs:
+                                review_text = div.get_text(strip=True)
+                                if review_text:
+                                    reviews.append(review_text)
                 
-                # Look for divs with matching class
-                results = soup.find_all('div', {'class': pattern})
-                if results:
-                    reviews.extend([result.text.strip() for result in results])
-                    break
+                # If no reviews found, try alternative selectors based on the HTML structure
+                if not reviews:
+                    # Alternative method: try finding all review cards and extracting content
+                    review_cards = soup.find_all('div', attrs={'data-automation': 'reviewCard'})
+                    for card in review_cards:
+                        # Check for the review body section
+                        body = card.find('div', attrs={'data-test-target': 'review-body'})
+                        if body:
+                            # Try to get the text directly or from child elements
+                            review_text = body.get_text(strip=True)
+                            if review_text:
+                                reviews.append(review_text)
                 
-                # Look for elements with matching ID
-                results = soup.find_all(id=pattern)
-                if results:
-                    reviews.extend([result.text.strip() for result in results])
-                    break
+                # Try more generic selectors if still no reviews found
+                if not reviews:
+                    selectors = [
+                        'div[data-test-target="review-body"] span',
+                        '.biGQs._P.pZUbB.KxBGd span',
+                        '.prw_reviews_text_summary_hsx div',
+                        '.partial_entry',
+                        '.review-container .reviewText',
+                    ]
+                    
+                    for selector in selectors:
+                        elements = soup.select(selector)
+                        if elements:
+                            for el in elements:
+                                review_text = el.get_text(strip=True)
+                                if review_text and len(review_text) > 20:  # Only include if substantial
+                                    reviews.append(review_text)
+            
+            # Generic approach if no reviews found
+            if not reviews:
+                for pattern in review_patterns:
+                    # Look for paragraphs with matching class
+                    results = soup.find_all('p', {'class': pattern})
+                    if results:
+                        reviews.extend([result.text.strip() for result in results])
+                        break
+                    
+                    # Look for divs with matching class
+                    results = soup.find_all('div', {'class': pattern})
+                    if results:
+                        reviews.extend([result.text.strip() for result in results])
+                        break
+                    
+                    # Look for elements with matching ID
+                    results = soup.find_all(id=pattern)
+                    if results:
+                        reviews.extend([result.text.strip() for result in results])
+                        break
             
             # If still no reviews found, try some common review containers
             if not reviews:
@@ -181,8 +272,9 @@ def reviews_scrape(url, num_pages, progress_bar=None):
                         if results:
                             reviews.extend([result.text.strip() for result in results])
             
-            # Filter out empty reviews
+            # Filter out empty reviews and duplicates
             reviews = [r for r in reviews if r.strip()]
+            reviews = list(dict.fromkeys(reviews))  # Remove duplicates while preserving order
             
             if reviews:
                 # Create DataFrame for this page
@@ -192,6 +284,10 @@ def reviews_scrape(url, num_pages, progress_bar=None):
                 df['url'] = page_url
                 df_list.append(df)
                 total_reviews += len(reviews)
+                
+                st.sidebar.success(f"Page {idx+1}: Found {len(reviews)} reviews")
+            else:
+                st.sidebar.warning(f"Page {idx+1}: No reviews found")
             
             # Update progress
             if progress_bar:
@@ -356,6 +452,35 @@ def get_most_frequent_words(reviews, min_word_length=3, max_words=20, stopwords=
     
     return most_common_words
 
+def get_word_frequency_by_sentiment(dataframe, review_column='review', score_column='score'):
+    """Create a dataframe with word frequencies partitioned by sentiment score"""
+    # Get unique sentiment scores
+    sentiment_scores = sorted(dataframe[score_column].unique())
+    
+    # Create a dictionary to store word frequencies for each sentiment
+    word_freq_data = []
+    
+    # Process each sentiment score
+    for score in sentiment_scores:
+        # Get reviews for this sentiment
+        sentiment_reviews = dataframe[dataframe[score_column] == score][review_column].tolist()
+        
+        # Get word frequencies
+        word_freqs = get_most_frequent_words(sentiment_reviews, max_words=30)
+        
+        # Add to dataframe
+        for word, freq in word_freqs:
+            word_freq_data.append({
+                'sentiment_score': score,
+                'word': word,
+                'frequency': freq
+            })
+    
+    # Convert to dataframe
+    word_freq_df = pd.DataFrame(word_freq_data)
+    
+    return word_freq_df
+
 def save_to_excel(dataframe):
     """Save analysis results to Excel with error handling"""
     try:
@@ -364,20 +489,12 @@ def save_to_excel(dataframe):
         
         # Create a Pandas Excel writer using XlsxWriter as the engine
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            # Write the dataframe to the Excel file
+            # Write the sentiment dataframe to the Excel file
             dataframe.to_excel(writer, sheet_name='Sentiment Scores', index=False)
             
             # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['Sentiment Scores']
-            
-            # Add a new worksheet for most frequent words
-            worksheet_freq_words = workbook.add_worksheet('Frequent Words')
-            
-            # Get the unique sentiment values
-            sentiment_values = dataframe['score'].unique()
-            
-            row_offset = 0
             
             # Add a summary worksheet
             worksheet_summary = workbook.add_worksheet('Summary')
@@ -407,31 +524,48 @@ def save_to_excel(dataframe):
             chart.set_y_axis({'name': 'Count'})
             worksheet_summary.insert_chart('E2', chart, {'x_scale': 1.5, 'y_scale': 1.5})
             
-            # Write frequent words by sentiment
-            for sentiment_value in sentiment_values:
-                # Filter reviews by sentiment value
-                filtered_reviews = dataframe[dataframe['score'] == sentiment_value]['review'].tolist()
+            # Create frequency dataframe partitioned by sentiment score
+            word_freq_df = get_word_frequency_by_sentiment(dataframe)
+            
+            # Write the word frequency dataframe to a separate sheet
+            word_freq_df.to_excel(writer, sheet_name='Word Frequencies', index=False)
+            
+            # Add additional sheets for each sentiment score for easier analysis
+            for score in sorted(dataframe['score'].unique()):
+                # Filter the word frequency dataframe for this score
+                score_words = word_freq_df[word_freq_df['sentiment_score'] == score]
                 
-                if not filtered_reviews:
-                    continue
-                
-                # Get the most frequent words for this sentiment value
-                most_frequent_words = get_most_frequent_words(filtered_reviews)
-                
-                if not most_frequent_words:
-                    continue
-                
-                # Write the sentiment value to the worksheet
-                worksheet_freq_words.write(row_offset, 0, f'Sentiment Value: {sentiment_value} ({SENTIMENT_DICT[str(sentiment_value)]})')
-                worksheet_freq_words.write(row_offset + 1, 0, 'Word')
-                worksheet_freq_words.write(row_offset + 1, 1, 'Count')
-                
-                # Write the most frequent words and their counts to the worksheet
-                for i, (word, count) in enumerate(most_frequent_words):
-                    worksheet_freq_words.write(row_offset + i + 2, 0, word)
-                    worksheet_freq_words.write(row_offset + i + 2, 1, count)
-                
-                row_offset += len(most_frequent_words) + 4
+                if not score_words.empty:
+                    # Create a sheet name
+                    sheet_name = f"Score {score} Words"
+                    
+                    # Write to Excel
+                    score_words.to_excel(writer, sheet_name=sheet_name, index=False)
+                    
+                    # Get the worksheet object
+                    score_worksheet = writer.sheets[sheet_name]
+                    
+                    # Create a chart for this sentiment
+                    word_chart = workbook.add_chart({'type': 'bar'})
+                    
+                    # Get top 10 words by frequency
+                    top_words = score_words.nlargest(10, 'frequency')
+                    
+                    # Add data series
+                    word_chart.add_series({
+                        'name': f'Frequency for Score {score}',
+                        'categories': [sheet_name, 1, 1, min(11, len(top_words) + 1), 1],  # Word column
+                        'values': [sheet_name, 1, 2, min(11, len(top_words) + 1), 2],     # Frequency column
+                        'data_labels': {'value': True},
+                    })
+                    
+                    # Set chart title and axes
+                    word_chart.set_title({'name': f'Most Common Words for Score {score}'})
+                    word_chart.set_x_axis({'name': 'Word'})
+                    word_chart.set_y_axis({'name': 'Frequency'})
+                    
+                    # Insert chart
+                    score_worksheet.insert_chart('E2', word_chart, {'x_scale': 1.5, 'y_scale': 1.5})
             
         # Return the Excel file as bytes
         output.seek(0)
@@ -442,6 +576,8 @@ def save_to_excel(dataframe):
         return None
 
 def main():
+    """Main application function"""
+    # Page config already set at the top
     
     st.title('Jim Bot 🤖')
     st.markdown("_Sentiment analysis for your reviews_")
@@ -470,17 +606,7 @@ def main():
         st.subheader("Analyze CSV File")
         uploaded_file = st.file_uploader("Upload a CSV file containing reviews", type=["csv"])
         
-        # Sample data download
-        st.markdown("#### Don't have test data?")
-        try:
-            if os.path.exists(SAMPLE_DATA_PATH):
-                sample_data = pd.read_csv(SAMPLE_DATA_PATH)
-                data_csv = sample_data.to_csv(index=False).encode('utf-8')
-                st.download_button("Download sample product review data", data_csv, 'AmazonReviews.csv')
-            else:
-                st.info("Sample data file not found.")
-        except Exception as e:
-            st.warning(f"Could not load sample data: {str(e)}")
+        # Removed the sample data section as requested
         
         if uploaded_file is not None:
             st.success('Successfully uploaded CSV!')
@@ -518,23 +644,32 @@ def main():
                 
                 # Word frequency analysis
                 st.subheader("Common Words by Sentiment")
+                
+                # Create word frequency dataframe
+                word_freq_df = get_word_frequency_by_sentiment(review_df)
+                
+                # Display overall word frequency dataframe
+                if not word_freq_df.empty:
+                    st.dataframe(word_freq_df, use_container_width=True)
+                
+                # Display by sentiment tab
                 sentiment_tabs = st.tabs([SENTIMENT_DICT[str(i)] for i in range(1, 6)])
                 
                 for i, tab in enumerate(sentiment_tabs, 1):
                     with tab:
-                        filtered_reviews = review_df[review_df['score'] == i]['review'].tolist()
-                        if filtered_reviews:
-                            common_words = get_most_frequent_words(filtered_reviews)
-                            if common_words:
-                                words_df = pd.DataFrame(common_words, columns=['Word', 'Count'])
-                                col1, col2 = st.columns([2, 3])
-                                with col1:
-                                    st.dataframe(words_df, use_container_width=True)
-                                with col2:
-                                    fig = px.bar(words_df, x='Word', y='Count', title=f'Most Common Words in {SENTIMENT_DICT[str(i)]} Reviews')
-                                    st.plotly_chart(fig, use_container_width=True)
-                            else:
-                                st.info(f"No common words found in {SENTIMENT_DICT[str(i)]} reviews.")
+                        # Filter word frequencies for this sentiment
+                        sentiment_words = word_freq_df[word_freq_df['sentiment_score'] == i]
+                        
+                        if not sentiment_words.empty:
+                            col1, col2 = st.columns([2, 3])
+                            with col1:
+                                st.dataframe(sentiment_words, use_container_width=True)
+                            with col2:
+                                # Show top 15 words
+                                top_words = sentiment_words.nlargest(15, 'frequency')
+                                fig = px.bar(top_words, x='word', y='frequency', 
+                                           title=f'Most Common Words in {SENTIMENT_DICT[str(i)]} Reviews')
+                                st.plotly_chart(fig, use_container_width=True)
                         else:
                             st.info(f"No {SENTIMENT_DICT[str(i)]} reviews found.")
                 
@@ -723,4 +858,3 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
-    
