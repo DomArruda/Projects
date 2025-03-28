@@ -7,4 +7,5 @@ torchvision
 transformers
 plotly
 pyodbc
+xlsxwriter
 
