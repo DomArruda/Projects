@@ -12,13 +12,13 @@ import pyodbc
 
 downloaded_mock = False
 
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def load_model(boolean):
     if boolean:
         model = AutoModelForSequenceClassification.from_pretrained('nlptown/bert-base-multilingual-uncased-sentiment')
         return model
 
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def load_tokenizer(boolean):
     if boolean:
         tokenizer = AutoTokenizer.from_pretrained('nlptown/bert-base-multilingual-uncased-sentiment')
@@ -57,7 +57,7 @@ def reviews_csv(reviews):
     data = pd.read_csv(reviews, header="infer")
     data_columns = data.columns
     data_columns = data_columns.insert(0, 'None Selected')
-    additional_instructs = st.selectbox(f'Which column contains the reviews? {additional_instructs}', data_columns)
+    selected_column = st.selectbox('Which column contains the reviews?', data_columns)
     totalReviews = len(data)
     st.text(f'Total number of reviews detected: {totalReviews}')
     numReviews = int(st.number_input('How many reviews should I analyze? '))
