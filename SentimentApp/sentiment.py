@@ -9,6 +9,8 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from PIL import Image
 import plotly.express as px
 import pyodbc
+from collections import Counter
+import xlsxwriter
 
 downloaded_mock = False
 
@@ -67,7 +69,6 @@ def reviews_csv(reviews):
         data = data.iloc[:numReviews]
         data['score'] = data[selected_column].apply(lambda x: sentiment_score(x[-512:]))
         return data
-
 def SQL_scrape(query, conn):
     data = pd.read_sql(query, conn)
     data_columns = data.columns
@@ -82,6 +83,57 @@ def SQL_scrape(query, conn):
         data = data.iloc[:numReviews]
         data['score'] = data[selected_column].apply(lambda x: sentiment_score(x[-512:]))
         return data
+
+def get_most_frequent_words(reviews):
+    words = []
+    for review in reviews:
+        words.extend(review.split())
+    
+    word_counts = Counter(words)
+    
+    # Get the most common words and their counts
+    most_common_words = word_counts.most_common(10)
+    
+    return most_common_words
+
+def save_to_excel(dataframe):
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    writer = pd.ExcelWriter('sentiment_analysis.xlsx', engine='xlsxwriter')
+
+    # Write the dataframe to the Excel file.
+    dataframe.to_excel(writer, sheet_name='Sentiment Scores', index=False)
+
+    # Get the xlsxwriter workbook and worksheet objects.
+    workbook  = writer.book
+    worksheet = writer.sheets['Sentiment Scores']
+
+    # Add a new worksheet for most frequent words.
+    worksheet_freq_words = workbook.add_worksheet('Frequent Words')
+
+    # Get the unique sentiment values.
+    sentiment_values = dataframe['score'].unique()
+
+    row_offset = 0
+
+    for sentiment_value in sentiment_values:
+        # Filter reviews by sentiment value.
+        filtered_reviews = dataframe[dataframe['score'] == sentiment_value]['review'].tolist()
+
+        # Get the most frequent words for this sentiment value.
+        most_frequent_words = get_most_frequent_words(filtered_reviews)
+
+        # Write the sentiment value to the worksheet.
+        worksheet_freq_words.write(row_offset, 0, f'Sentiment Value: {sentiment_value}')
+
+        # Write the most frequent words and their counts to the worksheet.
+        for i, (word, count) in enumerate(most_frequent_words):
+            worksheet_freq_words.write(row_offset + i + 1, 0, word)
+            worksheet_freq_words.write(row_offset + i + 1, 1, count)
+
+        row_offset += len(most_frequent_words) + 2
+
+    # Close the Pandas Excel writer and output the Excel file.
+    writer.save()
 
 st.title('Jim Bot :robot_face:')
 st.text('')
@@ -136,6 +188,7 @@ if uploaded_link == '' and uploaded_file is not None:
     st.plotly_chart(fig)
     review_csv = review_df.to_csv(index=False).encode('utf-8')
     st.download_button('Click below to download your sentiment report:', review_csv, 'sentiment.csv')
+    save_to_excel(review_df)
 
 elif uploaded_link != '' and num_pages is not None and uploaded_file is None:
     st.markdown('**Successfully received link!**')
@@ -147,6 +200,7 @@ elif uploaded_link != '' and num_pages is not None and uploaded_file is None:
     st.plotly_chart(fig)
     review_csv = review_data.to_csv(index=False).encode('utf-8')
     st.download_button('Click here to download your sentiment report', review_csv, 'sentiment.csv')
+    save_to_excel(review_data)
 
 elif server != '' and database != '' and uploaded_file is None and uploaded_link == '':
     try:
@@ -164,11 +218,12 @@ elif server != '' and database != '' and uploaded_file is None and uploaded_link
                 review_data = SQL_scrape(query, conn)
                 review_data.reset_index(inplace=True, drop=True)
                 st.dataframe(review_data, use_container_width=True)
-                fig = px.histogram(review_data, x='score', title='Histogram of Scores')
+                                fig = px.histogram(review_data, x='score', title='Histogram of Scores')
                 fig.update_traces(marker_line_color='white', marker_line_width=1.0)
                 st.plotly_chart(fig)
                 review_csv = review_data.to_csv(index=False).encode('utf-8')
                 st.download_button('Click here to download your sentiment report', review_csv, 'sentiment.csv')
+                save_to_excel(review_data)
             except:
                 st.text('Error in processing the SQL query.')
     except:
