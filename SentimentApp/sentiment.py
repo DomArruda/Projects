@@ -14,6 +14,7 @@ import io
 import urllib.parse
 import time
 from requests.exceptions import RequestException
+st.set_page_config(page_title="Jim Bot - Sentiment Analysis", page_icon="🤖", layout="wide")
 
 # Constants
 MAX_TOKEN_LENGTH = 512
