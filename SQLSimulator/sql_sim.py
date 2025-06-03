@@ -10,7 +10,7 @@ from PIL import Image
 image = Image.open("SQLSimulator/database_schema.png")
 st.title("SQL SIMULATOR ⚙️")
 st.markdown("*Database schema*")
-st.image(image, caption = '', use_column_width = True)
+st.image(image, caption = '', use_container_width = True)
 st.text('')
 st.text('')
 
