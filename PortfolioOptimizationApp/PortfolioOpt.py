@@ -18,7 +18,7 @@ import pytz
 warnings.filterwarnings('ignore')
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
 st.title('Portfolio Optimization & Analysis')
-st.image(image, caption='', use_column_width=True)
+st.image(image, caption='', use_container_width=True)
 
 def fetch_factor_data(start_date, end_date):
     ff_factors = pdr.get_data_famafrench('F-F_Research_Data_Factors_daily', start=start_date, end=end_date)[0]
@@ -167,7 +167,7 @@ if st.button('Run Analysis'):
         def fetch_data(tickers, start, end):
             data = yf.download(tickers, start=start, end=end, progress=False)
             data.index = data.index.tz_localize(None)  # Remove timezone info
-            return data['Adj Close']
+            return data['Close']
 
         data = fetch_data(stock_tickers, analysis_start, backtest_end)
         data = data.dropna(axis=1)
