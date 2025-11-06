@@ -525,7 +525,7 @@ def save_to_excel(dataframe):
             worksheet_summary.insert_chart('E2', chart, {'x_scale': 1.5, 'y_scale': 1.5})
             
             # Create frequency dataframe partitioned by sentiment score
-            word_freq_df = get_word_frequency_by_sentiment(dataframe)
+            word_freq_df = get_word_frequency_by_sentiment(dataframe, review_column = review_column)
             
             # Write the word frequency dataframe to a separate sheet
             word_freq_df.to_excel(writer, sheet_name='Word Frequencies', index=False)
@@ -858,3 +858,4 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
+
