@@ -271,9 +271,9 @@ if st.button('Run Analysis'):
                 st.info("Fama-French data unavailable for this window."); continue
             model = factor_analysis(port_ret, ff_back)
             out = pd.DataFrame({
-                'coef': round(float(model.params),3),
-                't': round(float(model.tvalues,3)),
-                'pval': round(float(model.pvalues,3)) # visually this look very ugly...
+                'coef': [round(val,3) for val in model.params],
+                't': [round(val,3) for val in model.tvalues],
+                'pval': [round(val,3) for val in model.pvalues]
             })
             out.loc['R-squared', ['coef','t','pval']] = [model.rsquared, np.nan, np.nan]
             st.dataframe(out)
