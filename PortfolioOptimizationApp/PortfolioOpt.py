@@ -141,7 +141,8 @@ def bootstrap_sharpe_ratio(returns, weights, risk_free, num_simulations=2000):
     port = (returns * weights).sum(axis=1)
     rf = align_rf(risk_free, port.index)
     ex = (port - rf).values
-    n = len(ex); if n == 0: return np.nan, (np.nan, np.nan)
+    n = len(ex)
+    if n == 0: return np.nan, (np.nan, np.nan)
     rng = np.random.default_rng(); vals = []
     for _ in range(num_simulations):
         sample = rng.choice(ex, size=n, replace=True)
