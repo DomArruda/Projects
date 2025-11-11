@@ -1,26 +1,26 @@
+# Prefer CPU torch wheel
+-f https://download.pytorch.org/whl/cpu
+
 # Core app
 streamlit>=1.36,<1.41
 
-# Data & math stack
+# Data & math
 pandas>=2.1,<2.4
 numpy>=1.26,<2.2
 scipy>=1.11,<1.14
 
-# Visualization
+# Viz
 matplotlib>=3.8,<3.10
 seaborn>=0.13,<0.14
 
-# ML & feature engineering
+# ML & DR
 scikit-learn>=1.3,<1.6
 umap-learn>=0.5.5,<0.6
 hdbscan>=0.8.33,<0.9
 kmodes>=0.12.2,<0.13
 
-# Text features (both TF-IDF and sentence embeddings)
+# Embeddings (MiniLM works without sentencepiece)
 sentence-transformers>=3.0,<3.2
 transformers>=4.41,<4.46
-sentencepiece>=0.1.99,<0.2
 tqdm>=4.66,<5
-
-# Torch backend for sentence-transformers (CPU by default)
-torch>=2.2,<2.5
+torch==2.4.1
