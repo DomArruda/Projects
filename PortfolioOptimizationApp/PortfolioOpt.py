@@ -276,6 +276,7 @@ if st.button('Run Analysis'):
                 'pval': model.pvalues
             })
             out.loc['R-squared', ['coef','t','pval']] = [model.rsquared, np.nan, np.nan]
+            out = out.round(3)
             st.dataframe(out)
 
         # Bootstrap Analysis
