@@ -14,8 +14,15 @@ from datetime import datetime
 
 warnings.filterwarnings('ignore')
 image = Image.open('PortfolioOptimizationApp/optGraph.jpg')
+
+st.set_page_config(
+    page_title="Portfolio Optimization & Analysis",
+    page_icon="📈"  #stonks!
+)
+
 st.title('Portfolio Optimization & Analysis')
 st.image(image, caption='', use_container_width=True)
+
 
 # ----------------------------- Data helpers -----------------------------
 @st.cache_data
