@@ -10,16 +10,22 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.cluster import KMeans, DBSCAN
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
 
-from sklearn.feature_extraction.text import TfidfVectorizer
 import umap
 import hdbscan
-from sentence_transformers import SentenceTransformer
-
 from scipy.sparse import hstack, csr_matrix
+
+# ---- Optional: sentence-transformers (guarded import) ----
+try:
+    from sentence_transformers import SentenceTransformer
+    _HAS_ST = True
+except Exception:
+    SentenceTransformer = None
+    _HAS_ST = False
 
 # ----------------------------------
 # Streamlit setup
@@ -32,19 +38,28 @@ st.title("Cluster Analysis App")
 # ----------------------------------
 @st.cache_resource(show_spinner=False)
 def load_sentence_model(model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    if not _HAS_ST:
+        raise RuntimeError("sentence-transformers is not installed.")
     return SentenceTransformer(model_name)
 
-def build_text_features(df: pd.DataFrame,
-                        text_cols: list[str],
-                        method: str = "TF-IDF",
-                        max_features: int = 20000,
-                        tfidf_ngrams=(1,2),
-                        st_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+def build_text_features(
+    df: pd.DataFrame,
+    text_cols: list[str],
+    method: str = "TF-IDF",
+    max_features: int = 20000,
+    tfidf_ngrams=(1, 2),
+    st_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+):
     """Return matrix for text features (sparse for TF-IDF, dense for embeddings) + fitted model/vectorizer."""
     if not text_cols:
         return None, None
 
-    text_series = df[text_cols].astype(str).fillna("").apply(lambda row: " ".join(row.values), axis=1)
+    text_series = (
+        df[text_cols]
+        .astype(str)
+        .fillna("")
+        .apply(lambda row: " ".join(row.values), axis=1)
+    )
 
     if method == "TF-IDF":
         vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=tfidf_ngrams)
@@ -52,14 +67,18 @@ def build_text_features(df: pd.DataFrame,
         return X_text_sparse, vectorizer  # sparse
     else:
         model = load_sentence_model(st_model_name)
-        embeddings = model.encode(text_series.to_list(), show_progress_bar=False, normalize_embeddings=True)
+        embeddings = model.encode(
+            text_series.to_list(), show_progress_bar=False, normalize_embeddings=True
+        )
         return embeddings.astype(np.float32), model  # dense
 
-def reduce_dimensions(X,
-                      reducer_type: str = "UMAP",
-                      n_components: int = 50,
-                      metric: str = "cosine",
-                      random_state: int = 42):
+def reduce_dimensions(
+    X,
+    reducer_type: str = "UMAP",
+    n_components: int = 50,
+    metric: str = "cosine",
+    random_state: int = 42,
+):
     """Reduce dimensions; returns dense np.ndarray."""
     if X is None:
         return None
@@ -68,10 +87,9 @@ def reduce_dimensions(X,
         svd = TruncatedSVD(n_components=n_components, random_state=random_state)
         return svd.fit_transform(X)
     else:
-        # UMAP generally handles dense or sparse
+        # UMAP handles dense or sparse; try to densify small sparse inputs
         X_in = X
         try:
-            # If sparse and small enough, toarray can help speed
             if hasattr(X, "toarray"):
                 X_in = X.toarray()
         except Exception:
@@ -82,13 +100,14 @@ def reduce_dimensions(X,
             min_dist=0.0,
             n_components=n_components,
             metric=metric,
-            random_state=random_state
+            random_state=random_state,
         )
         return umap_model.fit_transform(X_in)
 
 def one_hot_categorical(df: pd.DataFrame, cat_cols: list[str]):
     if not cat_cols:
         return None, None
+    # Use sparse_output=True for scalability
     ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=True)
     X_cat = ohe.fit_transform(df[cat_cols].astype(str))
     return X_cat, ohe
@@ -96,10 +115,9 @@ def one_hot_categorical(df: pd.DataFrame, cat_cols: list[str]):
 def scale_numeric(df: pd.DataFrame, num_cols: list[str]):
     if not num_cols:
         return None, None
-    pipe = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler", StandardScaler())
-    ])
+    pipe = Pipeline(
+        [("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]
+    )
     X_num = pipe.fit_transform(df[num_cols])
     return X_num, pipe
 
@@ -137,7 +155,8 @@ def hstack_safe(mats):
         return np.hstack(mats)
 
 def default_min_cluster_size(n_rows: int) -> int:
-    return max(5, int(0.01 * n_rows))  # ~1% of dataset, minimum 5
+    # ~1% of dataset, minimum 5
+    return max(5, int(0.01 * n_rows))
 
 # ----------------------------------
 # File upload
@@ -149,7 +168,7 @@ if uploaded_file is None:
     st.stop()
 
 # ----------------------------------
-# Main logic in try/except
+# Main logic
 # ----------------------------------
 try:
     data = pd.read_csv(uploaded_file)
@@ -167,9 +186,10 @@ try:
     with c2:
         categorical_columns = st.multiselect("Categorical columns", all_obj)
     with c3:
+        # Only offer text columns that aren't also chosen as categorical
         text_columns = st.multiselect(
             "Text columns (e.g., reviews, comments)",
-            [c for c in all_obj if c not in categorical_columns]
+            [c for c in all_obj if c not in categorical_columns],
         )
 
     if len(numerical_columns) == 0 and len(categorical_columns) == 0 and len(text_columns) == 0:
@@ -181,13 +201,41 @@ try:
     # ----------------------------------
     st.subheader("Text Embedding & Dimensionality Reduction")
     with st.expander("Text & Dimensionality Settings", expanded=True):
-        text_method = st.radio("Text embedding method", ["TF-IDF", "Sentence Embeddings"], index=1)
-        max_features = st.slider("TF-IDF max_features", 1000, 100_000, 20_000, step=1000, help="Only used for TF-IDF")
-        tfidf_ngrams = st.select_slider("TF-IDF n-grams", options=[(1,1), (1,2), (1,3)], value=(1,2), help="Only used for TF-IDF")
+        # Gate embeddings option if sentence-transformers isn't installed
+        text_method_options = ["TF-IDF", "Sentence Embeddings"] if _HAS_ST else ["TF-IDF"]
+        text_method_index = 1 if (_HAS_ST) else 0
+        text_method = st.radio(
+            "Text embedding method",
+            text_method_options,
+            index=text_method_index if len(text_method_options) > 1 else 0,
+            help=("Install sentence-transformers to enable embeddings." if not _HAS_ST else None),
+        )
+
+        # --- FIX: use string options instead of tuples to avoid select_slider state errors ---
+        ngram_label = st.selectbox(
+            "TF-IDF n-grams",
+            options=["1-1", "1-2", "1-3"],
+            index=1,  # "1-2"
+            help="Only used for TF-IDF",
+        )
+        tfidf_ngrams = tuple(map(int, ngram_label.split("-")))
+
+        max_features = st.slider(
+            "TF-IDF max_features",
+            1000,
+            100_000,
+            20_000,
+            step=1000,
+            help="Only used for TF-IDF",
+        )
 
         reduce_text = st.checkbox("Reduce text dimensions", value=True)
-        text_reducer_type = st.radio("Text reducer", ["UMAP", "SVD"], index=0,
-                                     help="SVD recommended for very large sparse TF-IDF; UMAP (cosine) for embeddings/TF-IDF.")
+        text_reducer_type = st.radio(
+            "Text reducer",
+            ["UMAP", "SVD"],
+            index=0,
+            help="SVD recommended for very large sparse TF-IDF; UMAP (cosine) for embeddings/TF-IDF.",
+        )
         text_components = st.slider("Reduced text dimensions", 5, 256, 50)
 
     # ----------------------------------
@@ -240,20 +288,23 @@ try:
 
     X_cat, ohe = one_hot_categorical(data, categorical_columns)
     if X_cat is not None and reduce_cat:
-        X_cat = TruncatedSVD(n_components=min(cat_components, max(2, min(X_cat.shape) - 1)), random_state=42).fit_transform(X_cat)
+        # Guard SVD bounds
+        valid_cat_components = cat_components
+        if hasattr(X_cat, "shape"):
+            valid_cat_components = min(cat_components, max(2, min(X_cat.shape) - 1))
+        X_cat = TruncatedSVD(n_components=valid_cat_components, random_state=42).fit_transform(X_cat)
 
     X_text, text_model = build_text_features(
         data,
         text_columns,
         method=text_method,
         max_features=max_features,
-        tfidf_ngrams=tfidf_ngrams
+        tfidf_ngrams=tfidf_ngrams,
     )
 
     if X_text is not None and reduce_text:
         reducer = "SVD" if (text_method == "TF-IDF" and text_reducer_type == "SVD") else "UMAP"
         metric = "cosine" if reducer == "UMAP" else "euclidean"
-        # Cap components to valid range when SVD on sparse with few features
         n_comp = text_components
         if reducer == "SVD" and hasattr(X_text, "shape"):
             n_comp = min(text_components, max(2, min(X_text.shape) - 1))
@@ -294,7 +345,10 @@ try:
         selected_columns = numerical_columns + categorical_columns
         kproto = KPrototypes(n_clusters=num_clusters, random_state=42, init="Huang")
         cat_idx = [selected_columns.index(c) for c in categorical_columns]
-        clusters = kproto.fit_predict(data[selected_columns].astype(object).values, categorical=cat_idx)
+        clusters = kproto.fit_predict(
+            data[selected_columns].astype(object).values,
+            categorical=cat_idx,
+        )
 
     elif algo == "DBSCAN":
         st.info("Using DBSCAN on constructed feature space")
@@ -308,7 +362,7 @@ try:
             min_samples=(None if min_samples_hdb == 0 else int(min_samples_hdb)),
             cluster_selection_epsilon=float(cluster_sel_epsilon),
             metric=metric_hdb,
-            prediction_data=True
+            prediction_data=True,
         )
         clusters = hdb.fit_predict(X_all)
         try:
@@ -337,21 +391,34 @@ try:
         min_dist=0.1,
         n_components=proj_components,
         metric=proj_metric,
-        random_state=42
+        random_state=42,
     ).fit_transform(X_all)
 
     plt.figure(figsize=(10, 6))
     if proj_components == 2:
-        sns.scatterplot(x=proj[:, 0], y=proj[:, 1],
-                        hue=data_out["Cluster"].astype(str),
-                        palette="viridis", s=20)
-        plt.xlabel("UMAP-1"); plt.ylabel("UMAP-2")
+        sns.scatterplot(
+            x=proj[:, 0],
+            y=proj[:, 1],
+            hue=data_out["Cluster"].astype(str),
+            palette="viridis",
+            s=20,
+        )
+        plt.xlabel("UMAP-1")
+        plt.ylabel("UMAP-2")
     else:
         from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
         ax = plt.axes(projection="3d")
-        p = ax.scatter(proj[:, 0], proj[:, 1], proj[:, 2],
-                       c=data_out["Cluster"], cmap="viridis", s=15)
-        ax.set_xlabel("UMAP-1"); ax.set_ylabel("UMAP-2"); ax.set_zlabel("UMAP-3")
+        p = ax.scatter(
+            proj[:, 0],
+            proj[:, 1],
+            proj[:, 2],
+            c=data_out["Cluster"],
+            cmap="viridis",
+            s=15,
+        )
+        ax.set_xlabel("UMAP-1")
+        ax.set_ylabel("UMAP-2")
+        ax.set_zlabel("UMAP-3")
         plt.colorbar(p, ax=ax, fraction=0.03, pad=0.1)
 
     plt.title(f"Clusters via {algo}")
@@ -362,20 +429,23 @@ try:
         "Download clustered CSV",
         data_out.to_csv(index=False).encode("utf-8"),
         file_name="clustered_output.csv",
-        mime="text/csv"
+        mime="text/csv",
     )
 
     # Optional dev notes
     if st.checkbox("Show technical notes / changelog", value=False):
         with st.expander("What changed vs. the original app?"):
-            st.markdown("""
-- **Text columns** supported via **TF‑IDF** or **Sentence Embeddings** (MiniLM default).
-- **HDBSCAN**/**DBSCAN** added for shape-aware clustering and noise handling.
+            st.markdown(
+                """
+- **Fixed**: TF‑IDF n‑gram widget uses string options to avoid `select_slider` state errors.
+- **Text columns** supported via **TF‑IDF** or **Sentence Embeddings** (if installed).
+- **HDBSCAN/DBSCAN** added for shape-aware clustering and noise handling.
 - **Dimensionality reduction** (UMAP/SVD) for stability and performance.
 - **One‑Hot Encoding** for categoricals (optional SVD to reduce cardinality).
 - **UMAP projection** for visualization even without 2 numeric columns.
 - **Conditional algorithms**: show **KModes** only for categorical-only; **KPrototypes** only for mixed numeric+categorical without text.
-            """)
+"""
+            )
 
 except Exception as e:
     st.error(f"An error occurred: {e}")
@@ -384,11 +454,13 @@ except Exception as e:
 # ----------------------------------
 # Instructions
 # ----------------------------------
-st.write("""
+st.write(
+    """
 ## Instructions
 1. Upload a CSV file containing your data.
 2. Select numerical, categorical, and/or text columns.
 3. Choose the embedding and reduction options for text (TF‑IDF or Sentence Embeddings).
 4. Pick a clustering algorithm (**HDBSCAN** is recommended for reviews/text).
 5. Inspect the clustered data and the UMAP plot. Download the results if needed.
-""")
+"""
+)
